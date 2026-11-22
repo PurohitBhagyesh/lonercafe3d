@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+}
+
+/* Custom cozy scrollbar for diary and library */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(43, 30, 22, 0.4);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(140, 107, 83, 0.6);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(230, 154, 78, 0.8);
+}
+
+/* Rain droplet animation on glass overlay */
+@keyframes rainDrop {
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { opacity: 0.6; }
+  100% { transform: translateY(1000%); opacity: 0; }
+}
+
+.animate-rain-streak {
+  animation: rainDrop 1.5s infinite linear;
+}
