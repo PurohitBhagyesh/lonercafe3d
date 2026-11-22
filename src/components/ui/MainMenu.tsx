@@ -13,11 +13,14 @@ import {
   Sparkles,
   RotateCcw,
   Shield,
-  Smartphone
+  Smartphone,
+  Bot
 } from 'lucide-react'
 import QRCode from 'qrcode'
 import { useGameStore, KeyBindings } from '../../store/gameStore'
 import { soundEngine } from '../../audio/soundEngine'
+import { networkSync } from '../../services/networkSync'
+import { aiCompanion } from '../../services/aiCompanion'
 
 export function MainMenu() {
   const { 
@@ -90,9 +93,19 @@ export function MainMenu() {
 
   if (gamePhase !== 'menu') return null
 
-  const handleLaunch = () => {
+  const handleLaunchSolo = () => {
     soundEngine.ensureStarted()
     soundEngine.playSitSound()
+    useGameStore.getState().toggleAiCompanion(false)
+    aiCompanion.stop()
+    startGame()
+  }
+
+  const handleLaunchAi = () => {
+    soundEngine.ensureStarted()
+    soundEngine.playSitSound()
+    useGameStore.getState().toggleAiCompanion(true)
+    aiCompanion.start()
     startGame()
   }
 
@@ -100,12 +113,23 @@ export function MainMenu() {
     if (!joinCode.trim()) return
     soundEngine.ensureStarted()
     soundEngine.playSitSound()
+    const cleanCode = joinCode.trim()
+    networkSync.initialize(cleanCode, false, 'Companion')
     setConnectedFriend({
-      id: joinCode.trim(),
-      name: `Companion #${joinCode.trim().slice(0, 4)}`,
-      position: [0.5, 0, -4.2],
-      state: 'sitting'
+      id: cleanCode,
+      name: `Companion #${cleanCode.slice(0, 4)}`,
+      position: [-1.8, 0.65, -4.2],
+      rotationY: 0,
+      state: 'sitting',
+      isAi: false
     })
+    startGame()
+  }
+
+  const handleLaunchHost = () => {
+    soundEngine.ensureStarted()
+    soundEngine.playSitSound()
+    networkSync.initialize(worldCode, true, 'Host')
     startGame()
   }
 
@@ -141,24 +165,36 @@ export function MainMenu() {
         {/* Dynamic Panels */}
         {activeTab === 'root' && (
           <div className="max-w-md mx-auto space-y-3">
+            {/* 1. Solo Experience */}
             <button
-              onClick={handleLaunch}
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white font-serif font-bold text-base tracking-wide shadow-2xl flex items-center justify-center gap-3 transition active:scale-[0.98] border border-amber-400/30"
+              onClick={handleLaunchSolo}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 hover:from-amber-600 hover:to-amber-800 text-white font-serif font-bold text-sm tracking-wide shadow-2xl flex items-center justify-center gap-3 transition active:scale-[0.98] border border-amber-500/30"
             >
-              <Play className="w-5 h-5 fill-current" />
-              <span>Enter Sanctuary (Spawn)</span>
+              <Play className="w-4 h-4 fill-current" />
+              <span>Enter Solitary Sanctuary (Solo)</span>
             </button>
 
+            {/* 2. AI Companion Experience */}
+            <button
+              onClick={handleLaunchAi}
+              className="w-full py-3 rounded-xl bg-[#2b180f] hover:bg-[#3d2315] border border-amber-500/40 text-amber-200 text-xs font-mono flex items-center justify-center gap-2.5 transition active:scale-[0.98] shadow-lg"
+            >
+              <Bot className="w-4 h-4 text-amber-400" />
+              <span>Enter with Maya (AI Companion)</span>
+              <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">AI Active</span>
+            </button>
+
+            {/* 3. Multiplayer Cards */}
             <div className="grid grid-cols-2 gap-3 pt-1">
               <button
                 onClick={() => {
                   soundEngine.playIpodClick()
                   setActiveTab('create')
                 }}
-                className="py-3 px-4 rounded-xl bg-[#241710]/90 hover:bg-[#382318] border border-[#523522] text-xs font-mono tracking-wide text-amber-200 flex items-center justify-center gap-2 transition active:scale-95 shadow-md"
+                className="py-3 px-3 rounded-xl bg-[#241710]/90 hover:bg-[#382318] border border-[#523522] text-xs font-mono tracking-wide text-amber-200 flex items-center justify-center gap-2 transition active:scale-95 shadow-md"
               >
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>Create Custom World</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>Host Co-Op (PIN/QR)</span>
               </button>
 
               <button
@@ -166,10 +202,10 @@ export function MainMenu() {
                   soundEngine.playIpodClick()
                   setActiveTab('join')
                 }}
-                className="py-3 px-4 rounded-xl bg-[#241710]/90 hover:bg-[#382318] border border-[#523522] text-xs font-mono tracking-wide text-stone-300 flex items-center justify-center gap-2 transition active:scale-95 shadow-md"
+                className="py-3 px-3 rounded-xl bg-[#241710]/90 hover:bg-[#382318] border border-[#523522] text-xs font-mono tracking-wide text-stone-300 flex items-center justify-center gap-2 transition active:scale-95 shadow-md"
               >
-                <Users className="w-4 h-4 text-stone-400" />
-                <span>Join by Code / PIN</span>
+                <Users className="w-3.5 h-3.5 text-stone-400" />
+                <span>Join Companion PIN</span>
               </button>
             </div>
 
@@ -181,7 +217,7 @@ export function MainMenu() {
               className="w-full py-2.5 rounded-xl bg-[#19100a]/80 hover:bg-[#281910] border border-[#3d2417] text-stone-400 hover:text-stone-200 text-xs font-mono flex items-center justify-center gap-2 transition"
             >
               <Sliders className="w-3.5 h-3.5" />
-              <span>Accessibility, Controls & Motion Settings</span>
+              <span>Controls, Comfort & Sound Settings</span>
             </button>
           </div>
         )}
@@ -268,10 +304,10 @@ export function MainMenu() {
             </div>
 
             <button
-              onClick={handleLaunch}
+              onClick={handleLaunchHost}
               className="w-full py-3 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 text-white font-serif font-bold text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 transition active:scale-[0.98]"
             >
-              <span>Spawn Into Sanctuary Now</span>
+              <span>Spawn as Co-Op Host</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

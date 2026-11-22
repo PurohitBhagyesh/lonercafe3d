@@ -3,6 +3,8 @@ import { MessageSquare, Send, Mic, MicOff, X, Sparkles, ShieldAlert } from 'luci
 import { useGameStore } from '../../store/gameStore'
 import { soundEngine } from '../../audio/soundEngine'
 import { database } from '../../services/database'
+import { networkSync } from '../../services/networkSync'
+import { aiCompanion } from '../../services/aiCompanion'
 
 export function QuietChatDrawer() {
   const { 
@@ -51,6 +53,13 @@ export function QuietChatDrawer() {
     }
 
     database.broadcastChatMessage('Companion', inputText)
+    networkSync.broadcastChatMessage(inputText)
+
+    // If AI Companion is active in the sanctuary, generate thoughtful reply
+    if (useGameStore.getState().isAiCompanionActive) {
+      aiCompanion.respondToChat(inputText)
+    }
+
     soundEngine.playIpodClick()
     setInputText('')
   }
@@ -61,6 +70,11 @@ export function QuietChatDrawer() {
       setRateLimitWarning(true)
       setTimeout(() => setRateLimitWarning(false), 1500)
     } else {
+      database.broadcastChatMessage('Companion', reaction)
+      networkSync.broadcastChatMessage(reaction)
+      if (useGameStore.getState().isAiCompanionActive) {
+        aiCompanion.respondToChat(reaction)
+      }
       soundEngine.playIpodClick()
     }
   }

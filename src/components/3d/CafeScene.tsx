@@ -25,6 +25,11 @@ import { CastIronFireplace } from './Fireplace'
 import { VinylCrate } from './VinylCrate'
 import { UprightPiano } from './UprightPiano'
 import { 
+  VintageCoffeeGrinder, 
+  VictorianGramophone, 
+  AntiquarianBookStack 
+} from './DetailedModels'
+import { 
   createWoodFloorTexture, 
   createBrickWallTexture 
 } from '../../utils/proceduralTextures'
@@ -200,6 +205,9 @@ export function CafeScene() {
 
       {/* Lively Atmospheric Details */}
       <CoffeeBeanJars position={[3.6, 1.15, -1.8]} />
+      <VintageCoffeeGrinder position={[3.6, 1.15, -2.3]} />
+      <VictorianGramophone position={[-4.7, 1.15, -2.6]} />
+      <AntiquarianBookStack position={[-2.9, 0.45, 2.6]} />
       <ScentedCandle position={[-1.2, 0.79, 2.7]} />
       <ScentedCandle position={[0.4, 0.95, -4.7]} />
       <BlanketBasket position={[-4.3, 0, 2.8]} />

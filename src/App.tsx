@@ -30,13 +30,19 @@ export default function App() {
 
     const params = new URLSearchParams(window.location.search)
     const roomParam = params.get('room')
+    const aiParam = params.get('ai')
+
     if (roomParam) {
       useGameStore.getState().setConnectedFriend({
         id: roomParam,
         name: `Friend #${roomParam.slice(0, 4)}`,
-        position: [0.5, 0, -4.2],
-        state: 'sitting'
+        position: [-1.8, 0.65, -4.2],
+        rotationY: 0,
+        state: 'sitting',
+        isAi: false
       })
+    } else if (aiParam === 'true') {
+      useGameStore.getState().toggleAiCompanion(true)
     }
 
     return () => {

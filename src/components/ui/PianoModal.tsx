@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import { X, Music, Sparkles, Volume2 } from 'lucide-react'
 import { useGameStore } from '../../store/gameStore'
 import { soundEngine } from '../../audio/soundEngine'
+import { networkSync } from '../../services/networkSync'
 
 interface PianoKey {
   note: string
@@ -38,6 +39,7 @@ export function PianoModal() {
 
   const playNote = (key: PianoKey) => {
     soundEngine.playPianoNote(key.freq)
+    networkSync.broadcastPianoNote(key.freq)
     setActiveKey(key.note)
     setTimeout(() => setActiveKey(null), 180)
   }

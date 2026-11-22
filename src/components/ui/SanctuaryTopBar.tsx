@@ -18,11 +18,15 @@ import {
   Waves,
   ChevronDown,
   MousePointer,
-  Eraser
+  Eraser,
+  Bot,
+  Sparkles
 } from 'lucide-react'
 import { useGameStore, WeatherType, TimeOfDay, AmbientSoundType } from '../../store/gameStore'
 import { soundEngine } from '../../audio/soundEngine'
 import { QRCodeModal } from './QRCodeModal'
+import { networkSync } from '../../services/networkSync'
+import { aiCompanion } from '../../services/aiCompanion'
 
 const WEATHERS: Array<{ id: WeatherType; label: string; icon: React.ReactNode }> = [
   { id: 'rain', label: 'Rain', icon: <CloudRain className="w-3.5 h-3.5" /> },
@@ -68,7 +72,10 @@ export function SanctuaryTopBar() {
     setSelectedAmbient,
     isPlaying,
     playlist,
-    currentTrackIndex
+    currentTrackIndex,
+    isAiCompanionActive,
+    toggleAiCompanion,
+    coopStatus
   } = useGameStore()
 
   const [showQR, setShowQR] = useState(false)
@@ -77,11 +84,24 @@ export function SanctuaryTopBar() {
   const handleWeather = (w: WeatherType) => {
     soundEngine.playIpodClick()
     setWeather(w)
+    networkSync.broadcastWeatherSync(w, timeOfDay)
   }
 
   const handleTime = (t: TimeOfDay) => {
     soundEngine.playIpodClick()
     setTimeOfDay(t)
+    networkSync.broadcastWeatherSync(weather, t)
+  }
+
+  const handleToggleAi = () => {
+    soundEngine.playIpodClick()
+    if (isAiCompanionActive) {
+      aiCompanion.stop()
+      toggleAiCompanion(false)
+    } else {
+      toggleAiCompanion(true)
+      aiCompanion.start()
+    }
   }
 
   const handlePolaroid = () => {
@@ -94,7 +114,7 @@ export function SanctuaryTopBar() {
     <>
       <header className="fixed top-3 left-0 right-0 z-30 flex items-center justify-between px-3 sm:px-6 pointer-events-none select-none">
         
-        {/* Left: Brand Watermark & Sanctuary Room Code */}
+        {/* Left: Brand Watermark, Room PIN & AI Companion Toggle */}
         <div className="pointer-events-auto flex items-center gap-2">
           <div className="flex items-center gap-2 bg-[#1b120c]/85 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-[#442c1d]/70 shadow-xl text-[#f4ede4]">
             <span className="font-serif text-xs font-bold tracking-wider text-amber-200">
@@ -102,6 +122,7 @@ export function SanctuaryTopBar() {
             </span>
           </div>
 
+          {/* Room PIN & Invite */}
           <button
             onClick={() => {
               soundEngine.playIpodClick()
@@ -113,8 +134,24 @@ export function SanctuaryTopBar() {
             <Users className="w-3.5 h-3.5 text-amber-400" />
             <span>PIN: <strong className="text-amber-300">{worldCode}</strong></span>
             {connectedFriend && (
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
+              <span className={`w-2 h-2 rounded-full ${connectedFriend.isAi ? 'bg-amber-400' : 'bg-emerald-400'} animate-pulse ml-1`} />
             )}
+          </button>
+
+          {/* AI Resident Companion Maya Toggle */}
+          <button
+            onClick={handleToggleAi}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-lg backdrop-blur-md transition text-[11px] font-mono cursor-pointer active:scale-95 ${
+              isAiCompanionActive
+                ? 'bg-amber-900/90 text-amber-200 border-amber-400'
+                : 'bg-[#1b120c]/80 hover:bg-[#322014] text-stone-300 hover:text-amber-200 border-[#442c1d]/60'
+            }`}
+            title={isAiCompanionActive ? 'Dismiss AI Companion Maya' : 'Summon AI Companion Maya to roam the café with you'}
+          >
+            <Bot className={`w-3.5 h-3.5 ${isAiCompanionActive ? 'text-amber-300 animate-bounce' : 'text-stone-400'}`} />
+            <span className="hidden md:inline">
+              {isAiCompanionActive ? 'Maya (AI Active)' : '+ AI Companion'}
+            </span>
           </button>
         </div>
 

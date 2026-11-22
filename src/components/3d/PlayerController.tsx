@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { useGameStore, SittingSpot } from '../../store/gameStore'
 import { soundEngine } from '../../audio/soundEngine'
 import { database } from '../../services/database'
+import { networkSync } from '../../services/networkSync'
 
 // Virtual touch movement store for mobile
 export const touchState = {
@@ -313,6 +314,14 @@ export function PlayerController() {
       isPointerLocked.current = document.pointerLockElement !== null
     }
 
+    // Initialize P2P Co-Op Networking
+    const { worldCode } = useGameStore.getState()
+    const params = new URLSearchParams(window.location.search)
+    const roomParam = params.get('room')
+    const activeRoom = roomParam || worldCode
+    const isHost = !roomParam
+    networkSync.initialize(activeRoom, isHost, isHost ? 'Host' : 'Guest')
+
     // Companion Broadcast Sync Listener
     const unsubscribeSync = database.onMessage((payload) => {
       if (payload.type === 'PLAYER_MOVE') {
@@ -320,7 +329,9 @@ export function PlayerController() {
           id: payload.senderId,
           name: payload.senderName || 'Companion',
           position: payload.data.position,
-          state: payload.data.state
+          rotationY: payload.data.rotationY || 0,
+          state: payload.data.state,
+          isAi: false
         })
       } else if (payload.type === 'WEATHER_SYNC') {
         useGameStore.getState().setWeather(payload.data.weather)
@@ -471,15 +482,28 @@ export function PlayerController() {
     camera.position.x = pos.current.x
     camera.position.z = pos.current.z
 
-    // Live Companion Peer Broadcast Sync every 120ms
+    // Live Companion Peer Broadcast Sync every 100ms
     syncTimer.current += delta
-    if (syncTimer.current > 0.12) {
+    if (syncTimer.current > 0.10) {
       syncTimer.current = 0
+      const activeState = useGameStore.getState()
+      const currentMode = activeState.mode
+      const currentPos: [number, number, number] = activeState.mode === 'sitting' && activeState.currentSittingSpot
+        ? activeState.currentSittingSpot.seatPosition
+        : [pos.current.x, pos.current.y, pos.current.z]
+
       database.broadcastPlayerState(
-        [pos.current.x, pos.current.y, pos.current.z],
+        currentPos,
         currentEuler.current.y,
-        'walking',
+        currentMode === 'sitting' ? 'sitting' : 'walking',
         'Loner'
+      )
+      networkSync.broadcastPlayerState(
+        currentPos,
+        currentEuler.current.y,
+        currentMode,
+        heldItem ? heldItem.type : null,
+        activeState.isMicActive
       )
     }
 

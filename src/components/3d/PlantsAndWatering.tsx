@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useGameStore, PlantState } from '../../store/gameStore'
 import { soundEngine } from '../../audio/soundEngine'
+import { networkSync } from '../../services/networkSync'
 
 export function WateringCanMesh({ position, isHeld = false }: { position: [number, number, number]; isHeld?: boolean }) {
   return (
@@ -159,6 +160,7 @@ export function PlantsAndWatering() {
               soundEngine.playWaterSound()
               soundEngine.playPlantSparkle()
               waterPlant(plant.id)
+              networkSync.broadcastPlantWatered(plant.id)
             }
           }}
         >

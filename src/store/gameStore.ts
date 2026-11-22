@@ -51,6 +51,19 @@ export interface SittingSpot {
   lookAt: [number, number, number]
 }
 
+export interface ConnectedFriend {
+  id: string
+  name: string
+  position: [number, number, number]
+  rotationY?: number
+  state: string
+  heldItem?: string | null
+  isTalking?: boolean
+  lastMessage?: string
+  lastMessageTime?: number
+  isAi?: boolean
+}
+
 export interface PlantState {
   id: string
   name: string
@@ -93,8 +106,13 @@ interface GameState {
   worldName: string
   isWorldPrivate: boolean
   setWorldConfig: (config: { name?: string; password?: string; isPrivate?: boolean }) => void
-  connectedFriend: { id: string; name: string; position: [number, number, number]; state: string; isTalking?: boolean } | null
-  setConnectedFriend: (friend: { id: string; name: string; position: [number, number, number]; state: string; isTalking?: boolean } | null) => void
+  connectedFriend: ConnectedFriend | null
+  setConnectedFriend: (friend: ConnectedFriend | null) => void
+  setFriendSpeech: (text: string) => void
+  isAiCompanionActive: boolean
+  toggleAiCompanion: (force?: boolean) => void
+  coopStatus: 'offline' | 'connecting' | 'connected'
+  setCoopStatus: (status: 'offline' | 'connecting' | 'connected') => void
 
   // Gameplay Mode
   mode: InteractionMode
@@ -246,6 +264,19 @@ export const useGameStore = create<GameState>((set, get) => ({
   })),
   connectedFriend: null,
   setConnectedFriend: (friend) => set({ connectedFriend: friend }),
+  setFriendSpeech: (text) => set((state) => ({
+    connectedFriend: state.connectedFriend ? {
+      ...state.connectedFriend,
+      lastMessage: text,
+      lastMessageTime: Date.now()
+    } : null
+  })),
+  isAiCompanionActive: false,
+  toggleAiCompanion: (force) => set((state) => ({
+    isAiCompanionActive: force !== undefined ? force : !state.isAiCompanionActive
+  })),
+  coopStatus: 'offline',
+  setCoopStatus: (status) => set({ coopStatus: status }),
 
   // Mode
   mode: 'walking',
