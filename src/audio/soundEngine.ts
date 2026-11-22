@@ -315,6 +315,37 @@ class SoundEngine {
     osc.start()
     osc.stop(this.ctx.currentTime + 0.03)
   }
+
+  public playCameraShutter() {
+    this.initContext()
+    if (!this.ctx || !this.sfxGain) return
+    const osc = this.ctx.createOscillator()
+    const gain = this.ctx.createGain()
+    osc.type = 'square'
+    osc.frequency.setValueAtTime(800, this.ctx.currentTime)
+    osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.06)
+    gain.gain.setValueAtTime(0.2, this.ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08)
+    osc.connect(gain)
+    gain.connect(this.sfxGain)
+    osc.start()
+    osc.stop(this.ctx.currentTime + 0.09)
+  }
+
+  public playVinylNeedleDrop() {
+    this.initContext()
+    if (!this.ctx || !this.sfxGain) return
+    const osc = this.ctx.createOscillator()
+    const gain = this.ctx.createGain()
+    osc.type = 'triangle'
+    osc.frequency.setValueAtTime(100, this.ctx.currentTime)
+    gain.gain.setValueAtTime(0.15, this.ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.18)
+    osc.connect(gain)
+    gain.connect(this.sfxGain)
+    osc.start()
+    osc.stop(this.ctx.currentTime + 0.2)
+  }
 }
 
 export const soundEngine = new SoundEngine()

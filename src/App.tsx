@@ -13,6 +13,8 @@ import { IPodPlayer } from './components/ui/IPodPlayer'
 import { DiaryModal } from './components/ui/DiaryModal'
 import { LibraryModal } from './components/ui/LibraryModal'
 import { CoffeeBrewModal } from './components/ui/CoffeeBrewModal'
+import { FoggyWindowOverlay } from './components/ui/FoggyWindowOverlay'
+import { PolaroidCamera } from './components/ui/PolaroidCamera'
 import { useGameStore } from './store/gameStore'
 
 export default function App() {
@@ -98,11 +100,13 @@ export default function App() {
           <QuietChatDrawer />
           <MobileControls />
 
-          {/* Diegetic In-Game Interactivity Modals */}
+          {/* Diegetic In-Game Interactivity Modals & Tools */}
           <IPodPlayer />
           <DiaryModal />
           <LibraryModal />
           <CoffeeBrewModal />
+          <FoggyWindowOverlay />
+          <PolaroidCamera />
         </>
       )}
     </div>

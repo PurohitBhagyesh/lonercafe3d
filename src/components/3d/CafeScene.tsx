@@ -14,6 +14,8 @@ import {
   PastryShowcase, 
   VinylTurntable 
 } from './RealLifeDecor'
+import { CastIronFireplace } from './Fireplace'
+import { VinylCrate } from './VinylCrate'
 import { 
   createWoodFloorTexture, 
   createBrickWallTexture 
@@ -177,8 +179,12 @@ export function CafeScene() {
       {/* 3. Fresh Pastry Showcase on the Barista Counter */}
       <PastryShowcase position={[3.6, 1.15, 1.1]} />
 
-      {/* 4. Vintage Vinyl Turntable on the Library Shelf */}
+      {/* 4. Vintage Vinyl Turntable & Record Crate on the Library Shelf */}
       <VinylTurntable position={[-4.8, 1.95, -2.1]} />
+      <VinylCrate position={[-4.8, 1.95, -1.4]} />
+
+      {/* 5. Cast Iron Wood-Burning Stove / Fireplace in Cozy Reading Nook */}
+      <CastIronFireplace position={[-3.6, 0, 4.3]} />
 
       {/* Outside 3D Weather, Trees, Stars & Horizon */}
       <WeatherEffect weather={weather} />
