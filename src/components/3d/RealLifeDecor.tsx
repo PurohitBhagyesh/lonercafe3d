@@ -3,13 +3,14 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { createChalkboardTexture } from '../../utils/proceduralTextures'
 
-// 1. Real-Time Synchronized Wall Clock
+// 1. Real-Time Synchronized Regulator Wall Clock with Swinging Pendulum
 export function RealTimeWallClock({ position }: { position: [number, number, number] }) {
   const hourHandRef = useRef<THREE.Group>(null)
   const minuteHandRef = useRef<THREE.Group>(null)
   const secondHandRef = useRef<THREE.Group>(null)
+  const pendulumRef = useRef<THREE.Group>(null)
 
-  useFrame(() => {
+  useFrame((state) => {
     const now = new Date()
     const hours = now.getHours() % 12
     const minutes = now.getMinutes()
@@ -24,10 +25,41 @@ export function RealTimeWallClock({ position }: { position: [number, number, num
     if (hourHandRef.current) {
       hourHandRef.current.rotation.z = -(((hours + minutes / 60) / 12) * Math.PI * 2)
     }
+
+    // Swinging pendulum at 1Hz natural harmonic beat
+    if (pendulumRef.current) {
+      const t = state.clock.elapsedTime
+      pendulumRef.current.rotation.z = Math.sin(t * Math.PI * 1.8) * 0.16
+    }
   })
 
   return (
     <group position={position}>
+      {/* Wooden Regulator Clock Case Extension (Lower Housing) */}
+      <mesh position={[0, -0.42, -0.01]} castShadow receiveShadow>
+        <boxGeometry args={[0.38, 0.65, 0.08]} />
+        <meshStandardMaterial color="#2d1c12" roughness={0.65} />
+      </mesh>
+      {/* Lower Glass Window Pane */}
+      <mesh position={[0, -0.42, 0.035]}>
+        <planeGeometry args={[0.26, 0.52]} />
+        <meshPhysicalMaterial transparent opacity={0.25} roughness={0.05} color="#e8f4fd" />
+      </mesh>
+
+      {/* Swinging Brass Pendulum */}
+      <group ref={pendulumRef} position={[0, -0.15, 0.015]}>
+        {/* Brass Rod */}
+        <mesh position={[0, -0.22, 0]}>
+          <cylinderGeometry args={[0.006, 0.006, 0.44, 8]} />
+          <meshStandardMaterial color="#d4af37" metalness={0.92} roughness={0.2} />
+        </mesh>
+        {/* Heavy Brass Bob Disc */}
+        <mesh position={[0, -0.44, 0]} rotation={[Math.PI * 0.5, 0, 0]}>
+          <cylinderGeometry args={[0.058, 0.058, 0.016, 24]} />
+          <meshStandardMaterial color="#d4af37" metalness={0.95} roughness={0.15} />
+        </mesh>
+      </group>
+
       {/* Clock Outer Rim */}
       <mesh castShadow receiveShadow rotation={[Math.PI * 0.5, 0, 0]}>
         <cylinderGeometry args={[0.42, 0.42, 0.05, 32]} />
@@ -242,3 +274,289 @@ export function VinylTurntable({ position }: { position: [number, number, number
     </group>
   )
 }
+
+// 5. Coffee Bean Glass Apothecary Jars on the Bar Counter
+export function CoffeeBeanJars({ position }: { position: [number, number, number] }) {
+  const beanRoasts = [
+    { color: '#2b170c', label: 'Dark Sumatra' },
+    { color: '#54321c', label: 'Ethiopia Yirgacheffe' },
+    { color: '#68784d', label: 'Green Raw Geisha' }
+  ]
+
+  return (
+    <group position={position}>
+      {beanRoasts.map((roast, idx) => (
+        <group key={idx} position={[(idx - 1) * 0.22, 0, 0]}>
+          {/* Clear Glass Jar Body */}
+          <mesh position={[0, 0.1, 0]} castShadow>
+            <cylinderGeometry args={[0.065, 0.065, 0.2, 16]} />
+            <meshPhysicalMaterial transparent opacity={0.35} roughness={0.05} transmission={0.9} color="#eef6fb" />
+          </mesh>
+          {/* Coffee Beans Fill Inside */}
+          <mesh position={[0, 0.08, 0]}>
+            <cylinderGeometry args={[0.058, 0.058, 0.15, 16]} />
+            <meshStandardMaterial color={roast.color} roughness={0.7} />
+          </mesh>
+          {/* Natural Cork Stopper */}
+          <mesh position={[0, 0.21, 0]} castShadow>
+            <cylinderGeometry args={[0.05, 0.06, 0.04, 16]} />
+            <meshStandardMaterial color="#c4a482" roughness={0.9} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  )
+}
+
+// 6. Cozy Scented Candle in Amber Glass with Flickering Wick
+export function ScentedCandle({ position }: { position: [number, number, number] }) {
+  const lightRef = useRef<THREE.PointLight>(null)
+
+  useFrame((state) => {
+    if (lightRef.current) {
+      const t = state.clock.elapsedTime
+      lightRef.current.intensity = 0.5 + Math.sin(t * 8) * 0.06 + Math.cos(t * 13) * 0.04
+    }
+  })
+
+  return (
+    <group position={position}>
+      {/* Amber Glass Tumbler Jar */}
+      <mesh position={[0, 0.05, 0]} castShadow>
+        <cylinderGeometry args={[0.045, 0.045, 0.1, 16]} />
+        <meshPhysicalMaterial transparent opacity={0.75} roughness={0.15} color="#b86b2b" />
+      </mesh>
+      {/* Soy Wax Fill */}
+      <mesh position={[0, 0.045, 0]}>
+        <cylinderGeometry args={[0.042, 0.042, 0.08, 16]} />
+        <meshStandardMaterial color="#faf6ee" roughness={0.6} />
+      </mesh>
+      {/* Tiny Golden Flame Wick */}
+      <mesh position={[0, 0.1, 0]}>
+        <coneGeometry args={[0.008, 0.024, 8]} />
+        <meshBasicMaterial color="#ffb703" />
+      </mesh>
+      <pointLight ref={lightRef} position={[0, 0.12, 0]} color="#ff9e00" intensity={0.5} distance={2.5} decay={2} />
+    </group>
+  )
+}
+
+// 7. Woven Wicker Blanket Basket by the Armchair
+export function BlanketBasket({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      {/* Woven Basket */}
+      <mesh position={[0, 0.18, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.26, 0.2, 0.36, 16]} />
+        <meshStandardMaterial color="#8b5e34" roughness={0.9} />
+      </mesh>
+      {/* Rolled Soft Flannel Throws */}
+      <group position={[0, 0.28, 0]}>
+        <mesh position={[-0.08, 0, 0.05]} rotation={[0.4, 0.2, 0.3]}>
+          <cylinderGeometry args={[0.07, 0.07, 0.24, 12]} />
+          <meshStandardMaterial color="#7f4f24" roughness={0.9} />
+        </mesh>
+        <mesh position={[0.08, 0, -0.04]} rotation={[-0.3, 0.4, -0.2]}>
+          <cylinderGeometry args={[0.07, 0.07, 0.24, 12]} />
+          <meshStandardMaterial color="#936639" roughness={0.9} />
+        </mesh>
+        <mesh position={[0, 0.06, 0]} rotation={[0.1, -0.3, 0.4]}>
+          <cylinderGeometry args={[0.065, 0.065, 0.22, 12]} />
+          <meshStandardMaterial color="#eddcd2" roughness={0.9} />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// 8. Bentwood Vintage Coat Rack with Hanging Trench Coat & Scarf
+export function BentwoodCoatRack({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      {/* Stand Base Pegs */}
+      <mesh position={[0, 0.04, 0]}>
+        <cylinderGeometry args={[0.24, 0.24, 0.04, 16]} />
+        <meshStandardMaterial color="#2d170e" roughness={0.6} />
+      </mesh>
+      {/* Tall Turned Center Post */}
+      <mesh position={[0, 1.0, 0]} castShadow>
+        <cylinderGeometry args={[0.035, 0.04, 1.95, 12]} />
+        <meshStandardMaterial color="#2d170e" roughness={0.5} />
+      </mesh>
+      {/* Curved Peg Hooks */}
+      {[0, Math.PI * 0.5, Math.PI, Math.PI * 1.5].map((angle, i) => (
+        <group key={i} position={[0, 1.75, 0]} rotation={[0, angle, 0]}>
+          <mesh position={[0.1, 0.06, 0]} rotation={[0, 0, -Math.PI * 0.25]}>
+            <cylinderGeometry args={[0.012, 0.012, 0.16, 8]} />
+            <meshStandardMaterial color="#2d170e" roughness={0.5} />
+          </mesh>
+        </group>
+      ))}
+      {/* Hanging Woolen Scarf */}
+      <mesh position={[0.12, 1.45, 0]} rotation={[0, 0, 0.15]}>
+        <boxGeometry args={[0.05, 0.48, 0.12]} />
+        <meshStandardMaterial color="#9c4221" roughness={0.9} />
+      </mesh>
+    </group>
+  )
+}
+
+// 9. Warm Brass Fluted Hanging Pendant Lamp
+export function HangingPendantLamp({
+  position,
+  lightIntensity = 2.4,
+  lightDistance = 12
+}: {
+  position: [number, number, number]
+  lightIntensity?: number
+  lightDistance?: number
+}) {
+  return (
+    <group position={position}>
+      {/* Thin black suspension cord from ceiling beam */}
+      <mesh position={[0, 0.5, 0]}>
+        <cylinderGeometry args={[0.005, 0.005, 1.0, 8]} />
+        <meshStandardMaterial color="#1a1a1a" roughness={0.5} />
+      </mesh>
+      {/* Spun Brass Shade Socket & Top Cap */}
+      <mesh position={[0, 0.05, 0]} castShadow>
+        <cylinderGeometry args={[0.025, 0.03, 0.08, 16]} />
+        <meshStandardMaterial color="#d4af37" metalness={0.9} roughness={0.2} />
+      </mesh>
+      {/* Flared Warm Amber / Brass Dome Shade */}
+      <mesh position={[0, -0.02, 0]} castShadow>
+        <coneGeometry args={[0.22, 0.16, 24, 1, true]} />
+        <meshStandardMaterial color="#b87333" metalness={0.8} roughness={0.25} side={THREE.DoubleSide} />
+      </mesh>
+      {/* Glowing Warm Edison Filament Bulb */}
+      <mesh position={[0, -0.04, 0]}>
+        <sphereGeometry args={[0.045, 16, 16]} />
+        <meshBasicMaterial color="#ffe8aa" />
+      </mesh>
+      {/* Dedicated Point Light */}
+      <pointLight
+        position={[0, -0.06, 0]}
+        color="#ffe2ba"
+        intensity={lightIntensity}
+        distance={lightDistance}
+        decay={1.2}
+      />
+    </group>
+  )
+}
+
+// 10. Peaceful Sleeping Calico Café Cat curled by the hearth
+export function SleepingCafeCat({ position }: { position: [number, number, number] }) {
+  const catBodyRef = useRef<THREE.Group>(null)
+
+  useFrame((state) => {
+    if (catBodyRef.current) {
+      const t = state.clock.elapsedTime
+      // Rhythmic gentle breathing: expansion & relaxation
+      const breath = Math.sin(t * 1.6) * 0.025
+      catBodyRef.current.scale.set(1 + breath * 0.8, 1 + breath, 1 + breath * 0.8)
+    }
+  })
+
+  return (
+    <group position={position}>
+      {/* Knitted Round Oatmeal Wool Cushion */}
+      <mesh position={[0, 0.04, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.28, 0.3, 0.08, 20]} />
+        <meshStandardMaterial color="#d6c7b2" roughness={0.9} />
+      </mesh>
+      {/* Cat Cushion Cord Piping */}
+      <mesh position={[0, 0.08, 0]}>
+        <torusGeometry args={[0.28, 0.016, 8, 24]} />
+        <meshStandardMaterial color="#b5a28a" roughness={0.8} />
+      </mesh>
+
+      {/* Sleeping Cat Curled Group */}
+      <group ref={catBodyRef} position={[0, 0.09, 0]}>
+        {/* Curled Body Crescent */}
+        <mesh position={[0, 0.07, 0]} rotation={[0, 0.3, 0]} castShadow>
+          <sphereGeometry args={[0.14, 16, 16]} />
+          <meshStandardMaterial color="#d97736" roughness={0.8} />
+        </mesh>
+        {/* Calico White & Dark Patches */}
+        <mesh position={[-0.05, 0.08, 0.04]} rotation={[0.2, 0.4, 0]}>
+          <sphereGeometry args={[0.09, 12, 12]} />
+          <meshStandardMaterial color="#fefefe" roughness={0.8} />
+        </mesh>
+        <mesh position={[0.06, 0.09, -0.03]} rotation={[-0.2, 0.1, 0]}>
+          <sphereGeometry args={[0.07, 12, 12]} />
+          <meshStandardMaterial color="#2d1c14" roughness={0.8} />
+        </mesh>
+
+        {/* Sleeping Cat Head Tucked Resting */}
+        <group position={[-0.1, 0.07, 0.08]} rotation={[0.1, 0.8, -0.1]}>
+          <mesh castShadow>
+            <sphereGeometry args={[0.075, 14, 14]} />
+            <meshStandardMaterial color="#d97736" roughness={0.8} />
+          </mesh>
+          {/* White Muzzle */}
+          <mesh position={[0, -0.02, 0.06]}>
+            <sphereGeometry args={[0.035, 10, 10]} />
+            <meshStandardMaterial color="#fafafa" roughness={0.7} />
+          </mesh>
+          {/* Left & Right Triangular Ears */}
+          <mesh position={[-0.035, 0.06, 0.01]} rotation={[-0.2, 0, 0.3]}>
+            <coneGeometry args={[0.025, 0.04, 4]} />
+            <meshStandardMaterial color="#cf6a27" roughness={0.8} />
+          </mesh>
+          <mesh position={[0.035, 0.06, 0.01]} rotation={[-0.2, 0, -0.3]}>
+            <coneGeometry args={[0.025, 0.04, 4]} />
+            <meshStandardMaterial color="#cf6a27" roughness={0.8} />
+          </mesh>
+        </group>
+
+        {/* Curled Fluffy Tail */}
+        <mesh position={[0.08, 0.04, 0.04]} rotation={[0, -0.8, 0.2]}>
+          <cylinderGeometry args={[0.022, 0.028, 0.26, 8]} />
+          <meshStandardMaterial color="#fefefe" roughness={0.8} />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// 11. Vintage Emerald Banker's Desk Lamp with Pull Chain
+export function BankersDeskLamp({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      {/* Heavy Stepped Brass Base */}
+      <mesh position={[0, 0.015, 0]} castShadow>
+        <cylinderGeometry args={[0.07, 0.08, 0.03, 16]} />
+        <meshStandardMaterial color="#d4af37" metalness={0.92} roughness={0.2} />
+      </mesh>
+      {/* Curved Brass Gooseneck Arm */}
+      <mesh position={[0, 0.16, 0]} castShadow>
+        <cylinderGeometry args={[0.009, 0.009, 0.28, 8]} />
+        <meshStandardMaterial color="#d4af37" metalness={0.92} roughness={0.2} />
+      </mesh>
+      <mesh position={[0, 0.3, 0.03]} rotation={[Math.PI * 0.35, 0, 0]}>
+        <cylinderGeometry args={[0.009, 0.009, 0.08, 8]} />
+        <meshStandardMaterial color="#d4af37" metalness={0.92} roughness={0.2} />
+      </mesh>
+      {/* Cylindrical Emerald Green Glass Shade */}
+      <mesh position={[0, 0.31, 0.08]} rotation={[0, 0, Math.PI * 0.5]} castShadow>
+        <cylinderGeometry args={[0.05, 0.05, 0.22, 16, 1, false, 0, Math.PI]} />
+        <meshPhysicalMaterial
+          color="#125438"
+          roughness={0.12}
+          transmission={0.65}
+          thickness={0.06}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Inner Soft Filament Glow */}
+      <mesh position={[0, 0.3, 0.08]}>
+        <cylinderGeometry args={[0.015, 0.015, 0.14, 8]} />
+        <meshBasicMaterial color="#ffe8aa" />
+      </mesh>
+      <pointLight position={[0, 0.28, 0.08]} color="#ffe0a0" intensity={1.8} distance={3.5} decay={1.5} />
+    </group>
+  )
+}
+
+

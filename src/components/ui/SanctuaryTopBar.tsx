@@ -16,7 +16,9 @@ import {
   Volume2,
   VolumeX,
   Waves,
-  ChevronDown
+  ChevronDown,
+  MousePointer,
+  Eraser
 } from 'lucide-react'
 import { useGameStore, WeatherType, TimeOfDay, AmbientSoundType } from '../../store/gameStore'
 import { soundEngine } from '../../audio/soundEngine'
@@ -63,7 +65,10 @@ export function SanctuaryTopBar() {
     isMuted,
     toggleMute,
     selectedAmbient,
-    setSelectedAmbient
+    setSelectedAmbient,
+    isPlaying,
+    playlist,
+    currentTrackIndex
   } = useGameStore()
 
   const [showQR, setShowQR] = useState(false)
@@ -260,17 +265,57 @@ export function SanctuaryTopBar() {
             </button>
           )}
 
+          {/* Wipe Window condensation button (when raining or snowing) */}
+          {(weather === 'rain' || weather === 'snow') && (
+            <button
+              onClick={() => {
+                soundEngine.playIpodClick()
+                window.dispatchEvent(new CustomEvent('open-foggy-window'))
+              }}
+              className="flex items-center gap-1.5 bg-cyan-950/75 hover:bg-cyan-900/90 text-cyan-200 px-2.5 sm:px-3 py-1.5 rounded-full border border-cyan-400/40 shadow-lg backdrop-blur-md transition active:scale-95 text-xs font-mono"
+              title="Wipe Steamy Condensation on Window Glass"
+            >
+              <Eraser className="w-3.5 h-3.5 text-cyan-300" />
+              <span className="hidden lg:inline">Wipe Window</span>
+            </button>
+          )}
+
           {/* Retro iPod Music quick button */}
           <button
             onClick={() => {
               soundEngine.playIpodClick()
               setMode('ipod')
             }}
-            className="flex items-center gap-1 bg-[#1b120c]/85 hover:bg-[#342217] text-stone-300 hover:text-amber-200 p-2 sm:px-3 sm:py-1.5 rounded-full border border-[#442c1d]/60 shadow-lg backdrop-blur-md transition active:scale-95 text-xs font-mono"
+            className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-full border shadow-lg backdrop-blur-md transition active:scale-95 text-xs font-mono ${
+              isPlaying
+                ? 'bg-amber-950/80 border-amber-400 text-amber-200'
+                : 'bg-[#1b120c]/85 hover:bg-[#342217] text-stone-300 hover:text-amber-200 border-[#442c1d]/60'
+            }`}
             title="Open iPod Player [M]"
           >
-            <Music className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden lg:inline">iPod [M]</span>
+            <Music className={`w-3.5 h-3.5 ${isPlaying ? 'text-amber-300 animate-pulse' : 'text-amber-400'}`} />
+            <span className="hidden lg:inline">
+              {isPlaying && playlist[currentTrackIndex]
+                ? playlist[currentTrackIndex].title.slice(0, 14) + '...'
+                : 'iPod [M]'}
+            </span>
+          </button>
+
+          {/* Mouse Lock / Unlock Toggle [L] */}
+          <button
+            onClick={() => {
+              soundEngine.playIpodClick()
+              if (document.pointerLockElement) {
+                document.exitPointerLock?.()
+              } else {
+                document.querySelector('canvas')?.requestPointerLock?.()
+              }
+            }}
+            className="hidden md:flex items-center gap-1 bg-[#1b120c]/85 hover:bg-[#342217] text-stone-300 hover:text-amber-200 px-2.5 py-1.5 rounded-full border border-[#442c1d]/60 shadow-lg backdrop-blur-md transition text-xs font-mono"
+            title="Lock/Unlock Mouse for FPS Look [L]"
+          >
+            <MousePointer className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden xl:inline">Lock Mouse [L]</span>
           </button>
 
           {/* Polaroid Snapshot quick button */}

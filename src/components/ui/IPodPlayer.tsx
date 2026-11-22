@@ -108,23 +108,9 @@ export function IPodPlayer() {
     setIsPlaying(true)
   }
 
-  // If in another mode and not minimized, do not render full modal
-  if (mode !== 'ipod' && !isMinimized) {
-    return (
-      /* Tiny floating mini-player button in corner */
-      <button
-        onClick={() => {
-          soundEngine.playIpodClick()
-          setMode('ipod')
-        }}
-        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 bg-[#2a1d15]/90 hover:bg-[#3d2a1f] text-[#f4ede4] px-4 py-2.5 rounded-full border border-[#8c6b53]/40 shadow-xl backdrop-blur-md transition-all active:scale-95"
-      >
-        <Music className="w-4 h-4 text-amber-400 animate-pulse" />
-        <span className="text-xs font-mono tracking-wide">
-          {isPlaying ? `Playing: ${currentTrack.title.slice(0, 18)}...` : 'iPod Music'}
-        </span>
-      </button>
-    )
+  // Only render modal when active in iPod mode
+  if (mode !== 'ipod') {
+    return null
   }
 
   return (
@@ -185,12 +171,38 @@ export function IPodPlayer() {
                 </span>
               )}
 
-              {/* Faux Progress Bar */}
-              <div className="w-full bg-[#1f2d1a]/20 h-1.5 rounded-full mt-3 overflow-hidden">
-                <div 
-                  className="bg-[#1f2d1a] h-full rounded-full transition-all duration-300" 
-                  style={{ width: isPlaying ? '65%' : '30%' }}
-                />
+              {/* Equalizer Spectrum Bars */}
+              {isPlaying ? (
+                <div className="flex items-end gap-1 h-5 mt-2 justify-center">
+                  {[0.4, 0.9, 0.6, 1.0, 0.7, 0.85, 0.5, 0.95].map((h, i) => (
+                    <div
+                      key={i}
+                      className="w-1 bg-[#1f2d1a] rounded-t animate-pulse"
+                      style={{
+                        height: `${h * 100}%`,
+                        animationDuration: `${0.35 + (i % 4) * 0.15}s`
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="h-5 mt-2 flex items-center justify-center text-[10px] opacity-60">
+                  Ready to play
+                </div>
+              )}
+
+              {/* Progress Bar & Timers */}
+              <div className="w-full mt-2">
+                <div className="w-full bg-[#1f2d1a]/20 h-1.5 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-[#1f2d1a] h-full rounded-full transition-all duration-300" 
+                    style={{ width: isPlaying ? '58%' : '15%' }}
+                  />
+                </div>
+                <div className="flex justify-between text-[9px] opacity-75 mt-0.5">
+                  <span>{isPlaying ? '1:24' : '0:00'}</span>
+                  <span>3:45</span>
+                </div>
               </div>
             </div>
           )}

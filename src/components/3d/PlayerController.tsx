@@ -40,6 +40,8 @@ export function PlayerController() {
   const vel = useRef(new THREE.Vector3())
   const targetEuler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
   const currentEuler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
+  const isDraggingMouse = useRef(false)
+  const lastMousePos = useRef({ x: 0, y: 0 })
   const keys = useRef<{ [key: string]: boolean }>({})
   const isPointerLocked = useRef(false)
   const footstepTimer = useRef(0)
@@ -146,6 +148,23 @@ export function PlayerController() {
           type: 'watering-can'
         })
       }
+    },
+    {
+      name: 'upright-piano',
+      prompt: 'Press [E] to Play Upright Piano',
+      pos: [2.2, 0.7, 4.0],
+      radius: 1.8,
+      onAction: () => {
+        soundEngine.playPianoNote(261.63)
+        sitDown({
+          id: 'piano-seat',
+          name: 'Piano Stool',
+          seatPosition: [2.2, 0.52, 3.4],
+          cameraPosition: [2.2, 1.15, 3.3],
+          lookAt: [2.2, 0.88, 4.2]
+        })
+        setMode('piano')
+      }
     }
   ]
 
@@ -154,9 +173,26 @@ export function PlayerController() {
     const onKeyDown = (e: KeyboardEvent) => {
       keys.current[e.code] = true
 
+      // Toggle Cursor Lock for FPS mode with [L]
+      if (e.code === 'KeyL' && gamePhase === 'playing' && mode === 'walking') {
+        soundEngine.playIpodClick()
+        if (document.pointerLockElement) {
+          document.exitPointerLock?.()
+        } else {
+          document.querySelector('canvas')?.requestPointerLock?.()
+        }
+        return
+      }
+
       // ESCAPE Key: pause / resume or exit submode
       if (e.code === 'Escape') {
         const { gamePhase, mode } = useGameStore.getState()
+        // If pointer locked, escape releases the cursor lock first without pausing
+        if (document.pointerLockElement) {
+          document.exitPointerLock?.()
+          return
+        }
+
         if (gamePhase === 'playing') {
           if (mode !== 'walking') {
             // Exit sitting, diary, or reading mode first
@@ -167,17 +203,11 @@ export function PlayerController() {
             // Pause game
             soundEngine.playIpodClick()
             pauseGame()
-            if (document.pointerLockElement) {
-              document.exitPointerLock?.()
-            }
           }
           return
         } else if (gamePhase === 'paused') {
           soundEngine.playSitSound()
           resumeGame()
-          if (!/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-            document.querySelector('canvas')?.requestPointerLock?.()
-          }
           return
         }
       }
@@ -212,7 +242,8 @@ export function PlayerController() {
         if (e.code === 'KeyM') {
           soundEngine.playIpodClick()
           setMode(mode === 'ipod' ? 'walking' : 'ipod')
-        } else if (e.code === 'KeyD') {
+        } else if (e.code === 'KeyJ') {
+          // Journal shortcut [J] - leaves [D] purely for moving right in WASD!
           soundEngine.playPageFlip()
           setMode(mode === 'writing' ? 'walking' : 'writing')
         } else if (e.code === 'KeyB') {
@@ -234,11 +265,47 @@ export function PlayerController() {
 
     const onMouseMove = (e: MouseEvent) => {
       const { gamePhase, mode } = useGameStore.getState()
-      if (gamePhase !== 'playing' || !isPointerLocked.current || mode !== 'walking') return
+      if (gamePhase !== 'playing' || mode !== 'walking') return
+
+      let dx = 0
+      let dy = 0
+
+      if (isPointerLocked.current) {
+        dx = e.movementX
+        dy = e.movementY
+      } else if (isDraggingMouse.current) {
+        dx = e.clientX - lastMousePos.current.x
+        dy = e.clientY - lastMousePos.current.y
+        lastMousePos.current = { x: e.clientX, y: e.clientY }
+      } else {
+        return
+      }
+
       const sens = 0.0022 * mouseSensitivity
-      targetEuler.current.y -= e.movementX * sens
-      targetEuler.current.x += (invertY ? e.movementY : -e.movementY) * sens
+      targetEuler.current.y -= dx * sens
+      targetEuler.current.x += (invertY ? dy : -dy) * sens
       // Clamp vertical look between -80 and +80 degrees
+      targetEuler.current.x = Math.max(-Math.PI * 0.44, Math.min(Math.PI * 0.44, targetEuler.current.x))
+    }
+
+    const onMouseDown = (e: MouseEvent) => {
+      if (e.button === 0) {
+        isDraggingMouse.current = true
+        lastMousePos.current = { x: e.clientX, y: e.clientY }
+      }
+    }
+
+    const onMouseUp = () => {
+      isDraggingMouse.current = false
+    }
+
+    // Two-finger swipe / wheel support on trackpad
+    const onWheel = (e: WheelEvent) => {
+      const { gamePhase, mode } = useGameStore.getState()
+      if (gamePhase !== 'playing' || mode !== 'walking') return
+      const sens = 0.0014 * mouseSensitivity
+      targetEuler.current.y -= e.deltaX * sens
+      targetEuler.current.x -= (invertY ? -e.deltaY : e.deltaY) * sens * 0.4
       targetEuler.current.x = Math.max(-Math.PI * 0.44, Math.min(Math.PI * 0.44, targetEuler.current.x))
     }
 
@@ -263,14 +330,20 @@ export function PlayerController() {
 
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('mousedown', onMouseDown)
+    window.addEventListener('mouseup', onMouseUp)
     window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('wheel', onWheel, { passive: true })
     document.addEventListener('pointerlockchange', onPointerLockChange)
 
     return () => {
       unsubscribeSync()
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('mousedown', onMouseDown)
+      window.removeEventListener('mouseup', onMouseUp)
       window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('wheel', onWheel)
       document.removeEventListener('pointerlockchange', onPointerLockChange)
     }
   }, [mode, mouseSensitivity, invertY, sitDown, standUp, setMode, pauseGame, resumeGame])

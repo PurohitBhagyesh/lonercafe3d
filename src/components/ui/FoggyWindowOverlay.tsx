@@ -31,22 +31,14 @@ export function FoggyWindowOverlay() {
     }
   }, [isOpen])
 
-  if (!isOpen) {
-    // Only show button if near window / raining / sitting at window stool
-    if (weather !== 'rain' && weather !== 'snow') return null
-    return (
-      <button
-        onClick={() => {
-          soundEngine.playIpodClick()
-          setIsOpen(true)
-        }}
-        className="fixed top-24 left-6 z-30 flex items-center gap-2 bg-[#20150e]/85 hover:bg-[#342217] text-[#f4ede4] px-3.5 py-2 rounded-full border border-blue-400/30 shadow-xl backdrop-blur-md transition active:scale-95 text-xs font-mono"
-      >
-        <Eraser className="w-4 h-4 text-cyan-300" />
-        <span>Wipe Steamy Window</span>
-      </button>
-    )
-  }
+  // Listen for custom trigger from SanctuaryTopBar or in-world window interaction
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true)
+    window.addEventListener('open-foggy-window', handleOpen)
+    return () => window.removeEventListener('open-foggy-window', handleOpen)
+  }, [])
+
+  if (!isOpen) return null
 
   const handlePointerDown = (e: React.PointerEvent) => {
     isDrawing.current = true

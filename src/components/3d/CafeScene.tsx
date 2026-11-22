@@ -12,10 +12,18 @@ import {
   RealTimeWallClock, 
   ChalkboardMenu, 
   PastryShowcase, 
-  VinylTurntable 
+  VinylTurntable,
+  CoffeeBeanJars,
+  ScentedCandle,
+  BlanketBasket,
+  BentwoodCoatRack,
+  HangingPendantLamp,
+  SleepingCafeCat,
+  BankersDeskLamp
 } from './RealLifeDecor'
 import { CastIronFireplace } from './Fireplace'
 import { VinylCrate } from './VinylCrate'
+import { UprightPiano } from './UprightPiano'
 import { 
   createWoodFloorTexture, 
   createBrickWallTexture 
@@ -52,9 +60,9 @@ export function CafeScene() {
     <>
       {/* 1. Warm Interior Ambience & Sky Fill Light (Prevents pitch-black darkness anywhere) */}
       <hemisphereLight
-        args={['#fffaf0', '#6e4d36', 2.0]}
+        args={['#fff8f0', '#7a5438', 2.4]}
       />
-      <ambientLight color="#fff4e8" intensity={1.6} />
+      <ambientLight color="#fff7ee" intensity={2.0} />
 
       {/* 2. Directional Sunlight / Moonlight through the window */}
       <directionalLight
@@ -67,13 +75,15 @@ export function CafeScene() {
 
       {/* 3. Interior Warm Fill Lights (Soft decay 1.0 ensures even, cozy café illumination) */}
       {/* Barista Coffee Bar, Espresso Machine & Pastry Showcase */}
-      <pointLight color="#ffe8cc" intensity={3.5} distance={16} decay={1.0} position={[3.6, 2.7, -0.5]} />
+      <pointLight color="#ffe8cc" intensity={3.8} distance={18} decay={1.0} position={[3.6, 2.7, -0.5]} />
       {/* Library Bookshelves, Record Crate & Plants */}
-      <pointLight color="#ffe8cc" intensity={3.2} distance={16} decay={1.0} position={[-3.8, 2.7, -0.8]} />
+      <pointLight color="#ffe8cc" intensity={3.4} distance={18} decay={1.0} position={[-3.8, 2.7, -0.8]} />
       {/* Front Window Counter & Seating */}
-      <pointLight color="#ffebd1" intensity={2.8} distance={14} decay={1.0} position={[0, 2.8, -2.5]} />
+      <pointLight color="#ffebd1" intensity={3.0} distance={16} decay={1.0} position={[0, 2.8, -2.5]} />
       {/* Loner's Writing Desk & Reading Armchair */}
-      <pointLight color="#ffdfba" intensity={2.8} distance={14} decay={1.0} position={[-1.2, 2.8, 2.5]} />
+      <pointLight color="#ffdfba" intensity={3.0} distance={16} decay={1.0} position={[-1.2, 2.8, 2.5]} />
+      {/* Upright Piano Warm Illumination */}
+      <pointLight color="#ffe0b5" intensity={3.2} distance={14} decay={1.0} position={[2.2, 2.7, 3.5]} />
 
       {/* Main Room Architecture */}
       <group>
@@ -164,6 +174,13 @@ export function CafeScene() {
         </mesh>
       </group>
 
+      {/* Real-Life Physical Hanging Brass Pendant Lamps */}
+      <HangingPendantLamp position={[3.6, 2.5, -1.2]} lightIntensity={2.8} />
+      <HangingPendantLamp position={[3.6, 2.5, 0.8]} lightIntensity={2.6} />
+      <HangingPendantLamp position={[0, 2.5, -2.5]} lightIntensity={2.4} />
+      <HangingPendantLamp position={[2.2, 2.5, 3.8]} lightIntensity={2.6} />
+      <HangingPendantLamp position={[-3.6, 2.5, -0.8]} lightIntensity={2.6} />
+
       {/* Real-Life Café Decor Elements */}
       <RealTimeWallClock position={[-1.2, 2.5, 4.95]} />
       <ChalkboardMenu position={[5.46, 2.3, -0.5]} />
@@ -171,6 +188,22 @@ export function CafeScene() {
       <VinylTurntable position={[-4.8, 1.95, -2.1]} />
       <VinylCrate position={[-4.8, 1.95, -1.4]} />
       <CastIronFireplace position={[-3.6, 0, 4.3]} />
+
+      {/* Sleeping Calico Café Cat curled peacefully on a knitted wool cushion by the hearth */}
+      <SleepingCafeCat position={[-2.7, 0, 4.3]} />
+
+      {/* Vintage Emerald Banker's Lamp on Writing Desk */}
+      <BankersDeskLamp position={[-1.6, 0.77, 2.25]} />
+
+      {/* Interactive Upright Walnut Piano with Bench */}
+      <UprightPiano position={[2.2, 0, 4.3]} rotation={[0, Math.PI, 0]} />
+
+      {/* Lively Atmospheric Details */}
+      <CoffeeBeanJars position={[3.6, 1.15, -1.8]} />
+      <ScentedCandle position={[-1.2, 0.79, 2.7]} />
+      <ScentedCandle position={[0.4, 0.95, -4.7]} />
+      <BlanketBasket position={[-4.3, 0, 2.8]} />
+      <BentwoodCoatRack position={[-4.8, 0, -4.2]} />
 
       {/* Outside 3D Forest, Mountains, Stars & Weather */}
       <WeatherEffect weather={weather} />

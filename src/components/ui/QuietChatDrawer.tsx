@@ -67,8 +67,8 @@ export function QuietChatDrawer() {
 
   return (
     <>
-      {/* Floating Chat & Mic Pill (Bottom Left) */}
-      <div className="fixed bottom-6 left-6 z-30 flex items-center gap-2">
+      {/* Floating Chat & Mic Pill (Bottom Left, safely above virtual joystick on mobile screens) */}
+      <div className="fixed bottom-6 max-sm:bottom-36 left-6 z-30 flex items-center gap-2 select-none">
         {/* Toggle Chat button */}
         <button
           onClick={() => {

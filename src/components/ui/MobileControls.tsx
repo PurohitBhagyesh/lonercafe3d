@@ -24,12 +24,22 @@ export function MobileControls() {
   // Only activate virtual joystick on genuine mobile touchscreens (phones & tablets)
   useEffect(() => {
     const checkTouch = () => {
+      // 1. Never show on desktop platforms (macOS, Windows, Linux)
+      const isDesktop = typeof navigator !== 'undefined' && 
+        /Macintosh|Windows|Linux/i.test(navigator.userAgent) && 
+        !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+      if (isDesktop) {
+        setIsTouchDevice(false)
+        return
+      }
+
       const hasTouch = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
       const isCoarsePointer = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
       const isMobileUA = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
       const isSmallScreen = typeof window !== 'undefined' && window.innerWidth <= 1024
 
-      // STRICT CHECK: Must have touch capability AND be a coarse pointer (finger touch) or mobile user agent
+      // STRICT CHECK: Must be a mobile OS with touch capability
       setIsTouchDevice(hasTouch && (isCoarsePointer || isMobileUA) && isSmallScreen)
     }
 
@@ -172,8 +182,8 @@ export function MobileControls() {
         </div>
       )}
 
-      {/* Right Quick Action Mobile Buttons */}
-      <div className="pointer-events-auto absolute bottom-8 right-6 flex flex-col gap-2.5 items-end">
+      {/* Right Contextual Action Button (Only show when prompt or sitting) */}
+      <div className="pointer-events-auto absolute bottom-8 right-6 flex flex-col items-end">
         {mode === 'sitting' ? (
           <button
             onClick={() => {
@@ -185,50 +195,16 @@ export function MobileControls() {
             <Armchair className="w-4 h-4" />
             <span className="text-xs font-mono font-bold">Stand Up</span>
           </button>
-        ) : (
+        ) : promptAction ? (
           <button
             onClick={() => {
-              if (promptAction) {
-                promptAction()
-              } else {
-                soundEngine.playSitSound()
-                sitDown({
-                  id: 'window-seat',
-                  name: 'Window Stool',
-                  seatPosition: [-1.8, 0.65, -4.2],
-                  cameraPosition: [-1.8, 1.25, -4.2],
-                  lookAt: [-1.8, 1.35, -12]
-                })
-              }
+              promptAction()
             }}
-            className="flex items-center gap-2 bg-[#2d1c13]/90 text-amber-200 px-3.5 py-2 rounded-full border border-[#8c6b53]/50 shadow-lg backdrop-blur-md active:scale-95 transition"
+            className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2.5 rounded-full border border-amber-300 shadow-xl backdrop-blur-md active:scale-95 transition animate-pulse"
           >
-            <Armchair className="w-4 h-4 text-amber-400" />
-            <span className="text-[11px] font-mono">Sit</span>
+            <span className="text-xs font-mono font-bold">Interact [E]</span>
           </button>
-        )}
-
-        <button
-          onClick={() => {
-            soundEngine.playPageFlip()
-            setMode('writing')
-          }}
-          className="flex items-center gap-2 bg-[#2d1c13]/90 text-stone-200 px-3.5 py-2 rounded-full border border-[#8c6b53]/50 shadow-lg backdrop-blur-md active:scale-95 transition"
-        >
-          <BookOpen className="w-4 h-4 text-amber-400" />
-          <span className="text-[11px] font-mono">Diary</span>
-        </button>
-
-        <button
-          onClick={() => {
-            soundEngine.playIpodClick()
-            setMode('ipod')
-          }}
-          className="flex items-center gap-2 bg-[#2d1c13]/90 text-stone-200 px-3.5 py-2 rounded-full border border-[#8c6b53]/50 shadow-lg backdrop-blur-md active:scale-95 transition"
-        >
-          <Music className="w-4 h-4 text-amber-400" />
-          <span className="text-[11px] font-mono">iPod</span>
-        </button>
+        ) : null}
       </div>
     </div>
   )

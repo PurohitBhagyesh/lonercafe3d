@@ -14,13 +14,20 @@ import { LibraryModal } from './components/ui/LibraryModal'
 import { CoffeeBrewModal } from './components/ui/CoffeeBrewModal'
 import { FoggyWindowOverlay } from './components/ui/FoggyWindowOverlay'
 import { PolaroidCamera } from './components/ui/PolaroidCamera'
+import { PianoModal } from './components/ui/PianoModal'
 import { useGameStore } from './store/gameStore'
 
 export default function App() {
   const { weather, gamePhase, fov, mode, reduceMotion } = useGameStore()
+  const [showControlsHint, setShowControlsHint] = React.useState(true)
 
   // Handle URL room param on mount
   useEffect(() => {
+    const hintTimer = setTimeout(() => setShowControlsHint(false), 8000)
+    const onActivity = () => setShowControlsHint(false)
+    window.addEventListener('keydown', onActivity)
+    window.addEventListener('mousedown', onActivity)
+
     const params = new URLSearchParams(window.location.search)
     const roomParam = params.get('room')
     if (roomParam) {
@@ -30,6 +37,12 @@ export default function App() {
         position: [0.5, 0, -4.2],
         state: 'sitting'
       })
+    }
+
+    return () => {
+      clearTimeout(hintTimer)
+      window.removeEventListener('keydown', onActivity)
+      window.removeEventListener('mousedown', onActivity)
     }
   }, [])
 
@@ -50,13 +63,13 @@ export default function App() {
         camera={{ position: [0, 1.45, 0], fov: fov, near: 0.1, far: 80 }}
         gl={{
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.45,
+          toneMappingExposure: 1.62,
           antialias: true
         }}
         onCreated={({ gl, scene }) => {
           scene.background = new THREE.Color(bgColor)
         }}
-        onClick={() => {
+        onDoubleClick={() => {
           if (gamePhase === 'playing' && mode === 'walking' && !/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
             const canvasEl = document.querySelector('canvas')
             canvasEl?.requestPointerLock?.()
@@ -105,6 +118,16 @@ export default function App() {
           <CoffeeBrewModal />
           <FoggyWindowOverlay />
           <PolaroidCamera />
+          <PianoModal />
+
+          {/* Gentle Controls Guidance Toast */}
+          {showControlsHint && mode === 'walking' && (
+            <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-20 pointer-events-none animate-in fade-in duration-700">
+              <div className="bg-[#1b1009]/90 border border-[#442c1d]/90 backdrop-blur-md px-4 py-2 rounded-full text-xs font-mono text-stone-200 shadow-2xl flex items-center gap-2">
+                <span className="text-amber-300 font-bold">W A S D</span> to walk • <span className="text-amber-300 font-bold">Drag / Trackpad</span> to look • <span className="text-amber-300 font-bold">[E]</span> to interact • <span className="text-stone-400">[L] Lock Mouse</span>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -630,6 +630,54 @@ class SoundEngine {
       osc.stop(t + 0.05)
     }
   }
+
+  // --- ACOUSTIC UPRIGHT PIANO NOTE SYNTHESIZER ---
+  public playPianoNote(freq: number) {
+    this.initContext()
+    if (!this.ctx || !this.sfxGain) return
+    const now = this.ctx.currentTime
+
+    // 1. Fundamental tone (rich triangle/sine blend)
+    const osc1 = this.ctx.createOscillator()
+    const gain1 = this.ctx.createGain()
+    const filter = this.ctx.createBiquadFilter()
+
+    osc1.type = 'triangle'
+    osc1.frequency.setValueAtTime(freq, now)
+
+    // Warm wooden soundboard filter
+    filter.type = 'lowpass'
+    filter.frequency.setValueAtTime(freq * 3.5, now)
+    filter.frequency.exponentialRampToValueAtTime(freq * 1.2, now + 1.8)
+
+    // Natural piano hammer strike attack & smooth acoustic decay
+    gain1.gain.setValueAtTime(0, now)
+    gain1.gain.linearRampToValueAtTime(0.22, now + 0.004) // fast hammer hit
+    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 3.0)
+
+    osc1.connect(filter)
+    filter.connect(gain1)
+    gain1.connect(this.sfxGain)
+
+    osc1.start(now)
+    osc1.stop(now + 3.1)
+
+    // 2. Harmonic overtone (octave overtone for string resonance)
+    const osc2 = this.ctx.createOscillator()
+    const gain2 = this.ctx.createGain()
+
+    osc2.type = 'sine'
+    osc2.frequency.setValueAtTime(freq * 2.003, now) // slight inharmonicity
+    gain2.gain.setValueAtTime(0, now)
+    gain2.gain.linearRampToValueAtTime(0.06, now + 0.005)
+    gain2.gain.exponentialRampToValueAtTime(0.0001, now + 1.6)
+
+    osc2.connect(gain2)
+    gain2.connect(this.sfxGain)
+
+    osc2.start(now)
+    osc2.stop(now + 1.7)
+  }
 }
 
 export const soundEngine = new SoundEngine()

@@ -23,6 +23,7 @@ export type InteractionMode =
   | 'brewing' 
   | 'ipod' 
   | 'chat'
+  | 'piano'
 
 export interface DiaryEntry {
   id: string
@@ -184,8 +185,11 @@ interface GameState {
 const DEFAULT_PLAYLIST: SongTrack[] = [
   { id: '1', title: 'Rain on Copper Roof', artist: 'Loner Sanctuary', isProcedural: true, synthGenre: 'lofi' },
   { id: '2', title: 'Empty Booths & Warm Steam', artist: 'Solitude Collective', isProcedural: true, synthGenre: 'jazz' },
-  { id: '3', title: 'Frost on Window Panes', artist: 'Hygge Studies', isProcedural: true, synthGenre: 'piano' },
-  { id: '4', title: 'Silent Hours for Quiet Souls', artist: 'Nocturne Studio', isProcedural: true, synthGenre: 'ambient' },
+  { id: '3', title: 'Sakura Petals Drifting', artist: 'Haru Chillhop', isProcedural: true, synthGenre: 'ambient' },
+  { id: '4', title: 'Gymnopédie No. 1 (Café Edit)', artist: 'Erik Satie & Tape Reel', isProcedural: true, synthGenre: 'piano' },
+  { id: '5', title: 'Frost on Window Panes', artist: 'Hygge Studies', isProcedural: true, synthGenre: 'piano' },
+  { id: '6', title: 'Silent Hours for Quiet Souls', artist: 'Nocturne Studio', isProcedural: true, synthGenre: 'ambient' },
+  { id: '7', title: 'Midnight Espresso & Books', artist: 'Late Night Library', isProcedural: true, synthGenre: 'lofi' },
 ]
 
 const INITIAL_ENTRIES: DiaryEntry[] = [
