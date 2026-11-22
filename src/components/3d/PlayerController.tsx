@@ -199,6 +199,25 @@ export function PlayerController() {
       if (e.code === 'Space' && mode === 'sitting') {
         soundEngine.playSitSound()
         standUp()
+        return
+      }
+
+      // Quick access hotkeys (when not typing in chat or diary)
+      const isInput = (e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA'
+      if (!isInput && gamePhase === 'playing') {
+        if (e.code === 'KeyM') {
+          soundEngine.playIpodClick()
+          setMode(mode === 'ipod' ? 'walking' : 'ipod')
+        } else if (e.code === 'KeyD') {
+          soundEngine.playPageFlip()
+          setMode(mode === 'writing' ? 'walking' : 'writing')
+        } else if (e.code === 'KeyB') {
+          soundEngine.playPageFlip()
+          setMode(mode === 'reading' ? 'walking' : 'reading')
+        } else if (e.code === 'KeyC') {
+          soundEngine.playIpodClick()
+          setMode(mode === 'brewing' ? 'walking' : 'brewing')
+        }
       }
     }
 

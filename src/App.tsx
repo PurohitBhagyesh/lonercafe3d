@@ -4,8 +4,7 @@ import * as THREE from 'three'
 import { CafeScene } from './components/3d/CafeScene'
 import { MainMenu } from './components/ui/MainMenu'
 import { PauseMenu } from './components/ui/PauseMenu'
-import { WeatherControlHUD } from './components/ui/WeatherControlHUD'
-import { TimeOfDayHUD } from './components/ui/TimeOfDayHUD'
+import { SanctuaryTopBar } from './components/ui/SanctuaryTopBar'
 import { QuietChatDrawer } from './components/ui/QuietChatDrawer'
 import { CrosshairAndPrompt } from './components/ui/CrosshairAndPrompt'
 import { MobileControls } from './components/ui/MobileControls'
@@ -51,7 +50,7 @@ export default function App() {
         camera={{ position: [0, 1.45, 0], fov: fov, near: 0.1, far: 80 }}
         gl={{
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.1,
+          toneMappingExposure: 1.45,
           antialias: true
         }}
         onCreated={({ gl, scene }) => {
@@ -95,8 +94,7 @@ export default function App() {
       {gamePhase === 'playing' && (
         <>
           <CrosshairAndPrompt />
-          <WeatherControlHUD />
-          <TimeOfDayHUD />
+          <SanctuaryTopBar />
           <QuietChatDrawer />
           <MobileControls />
 

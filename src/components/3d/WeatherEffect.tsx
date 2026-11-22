@@ -8,46 +8,43 @@ interface WeatherProps {
 }
 
 export function WeatherEffect({ weather }: WeatherProps) {
-  // Rain particles
-  const rainCount = 1800
-  const [rainGeo, rainPos] = useMemo(() => {
+  const rainCount = 1500
+  const [rainGeo] = useMemo(() => {
     const geo = new THREE.BufferGeometry()
     const pos = new Float32Array(rainCount * 3)
     for (let i = 0; i < rainCount; i++) {
-      pos[i * 3 + 0] = (Math.random() - 0.5) * 25 // X
-      pos[i * 3 + 1] = Math.random() * 15 + 1     // Y
-      pos[i * 3 + 2] = -Math.random() * 15 - 5    // Z outside the window
+      pos[i * 3 + 0] = (Math.random() - 0.5) * 26
+      pos[i * 3 + 1] = Math.random() * 16 + 1
+      pos[i * 3 + 2] = -Math.random() * 14 - 5.5
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-    return [geo, pos]
+    return [geo]
   }, [])
 
-  // Snow particles
-  const snowCount = 900
-  const [snowGeo, snowPos] = useMemo(() => {
+  const snowCount = 800
+  const [snowGeo] = useMemo(() => {
     const geo = new THREE.BufferGeometry()
     const pos = new Float32Array(snowCount * 3)
     for (let i = 0; i < snowCount; i++) {
-      pos[i * 3 + 0] = (Math.random() - 0.5) * 25
-      pos[i * 3 + 1] = Math.random() * 15 + 1
-      pos[i * 3 + 2] = -Math.random() * 15 - 5
+      pos[i * 3 + 0] = (Math.random() - 0.5) * 26
+      pos[i * 3 + 1] = Math.random() * 16 + 1
+      pos[i * 3 + 2] = -Math.random() * 14 - 5.5
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-    return [geo, pos]
+    return [geo]
   }, [])
 
-  // Sakura petals
-  const sakuraCount = 400
-  const [sakuraGeo, sakuraPos] = useMemo(() => {
+  const sakuraCount = 350
+  const [sakuraGeo] = useMemo(() => {
     const geo = new THREE.BufferGeometry()
     const pos = new Float32Array(sakuraCount * 3)
     for (let i = 0; i < sakuraCount; i++) {
-      pos[i * 3 + 0] = (Math.random() - 0.5) * 25
-      pos[i * 3 + 1] = Math.random() * 15 + 1
-      pos[i * 3 + 2] = -Math.random() * 15 - 5
+      pos[i * 3 + 0] = (Math.random() - 0.5) * 26
+      pos[i * 3 + 1] = Math.random() * 16 + 1
+      pos[i * 3 + 2] = -Math.random() * 14 - 5.5
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-    return [geo, pos]
+    return [geo]
   }, [])
 
   const rainRef = useRef<THREE.Points>(null)
@@ -58,10 +55,8 @@ export function WeatherEffect({ weather }: WeatherProps) {
     if (weather === 'rain' && rainRef.current) {
       const positions = rainRef.current.geometry.attributes.position.array as Float32Array
       for (let i = 0; i < rainCount; i++) {
-        positions[i * 3 + 1] -= delta * 18 // fast rain
-        if (positions[i * 3 + 1] < 0) {
-          positions[i * 3 + 1] = 16
-        }
+        positions[i * 3 + 1] -= delta * 16
+        if (positions[i * 3 + 1] < 0.2) positions[i * 3 + 1] = 16
       }
       rainRef.current.geometry.attributes.position.needsUpdate = true
     }
@@ -69,11 +64,9 @@ export function WeatherEffect({ weather }: WeatherProps) {
     if (weather === 'snow' && snowRef.current) {
       const positions = snowRef.current.geometry.attributes.position.array as Float32Array
       for (let i = 0; i < snowCount; i++) {
-        positions[i * 3 + 1] -= delta * 2.2 // gentle floating snow
-        positions[i * 3 + 0] += Math.sin(state.clock.elapsedTime + i) * 0.01
-        if (positions[i * 3 + 1] < 0) {
-          positions[i * 3 + 1] = 15
-        }
+        positions[i * 3 + 1] -= delta * 2.2
+        positions[i * 3 + 0] += Math.sin(state.clock.elapsedTime + i) * 0.008
+        if (positions[i * 3 + 1] < 0.2) positions[i * 3 + 1] = 15
       }
       snowRef.current.geometry.attributes.position.needsUpdate = true
     }
@@ -81,104 +74,117 @@ export function WeatherEffect({ weather }: WeatherProps) {
     if (weather === 'sakura' && sakuraRef.current) {
       const positions = sakuraRef.current.geometry.attributes.position.array as Float32Array
       for (let i = 0; i < sakuraCount; i++) {
-        positions[i * 3 + 1] -= delta * 1.5
-        positions[i * 3 + 0] += Math.cos(state.clock.elapsedTime * 0.8 + i) * 0.02 + 0.01 // breeze to right
-        if (positions[i * 3 + 1] < 0) {
+        positions[i * 3 + 1] -= delta * 1.4
+        positions[i * 3 + 0] += Math.cos(state.clock.elapsedTime * 0.8 + i) * 0.015 + 0.01
+        if (positions[i * 3 + 1] < 0.2) {
           positions[i * 3 + 1] = 15
-          positions[i * 3 + 0] = (Math.random() - 0.5) * 25
+          positions[i * 3 + 0] = (Math.random() - 0.5) * 26
         }
       }
       sakuraRef.current.geometry.attributes.position.needsUpdate = true
     }
   })
 
+  // Atmospheric sky colors
+  const skyColor = {
+    rain: '#6c7f93',
+    snow: '#a8bac9',
+    sunset: '#f49c66',
+    night: '#131e33',
+    sakura: '#f7cad0'
+  }[weather]
+
+  const foliageColor = {
+    rain: '#2d4734',
+    snow: '#e2ebf0',
+    sunset: '#3f5e42',
+    night: '#122417',
+    sakura: '#e5989b'
+  }[weather]
+
   return (
     <group>
-      {/* Outside Horizon & Pine Tree Silhouettes */}
-      <mesh position={[0, 4, -18]}>
-        <planeGeometry args={[50, 20]} />
-        <meshBasicMaterial 
-          color={
-            weather === 'sunset' ? '#ff7e47' :
-            weather === 'snow' ? '#b0c4de' :
-            weather === 'night' ? '#070b19' :
-            weather === 'sakura' ? '#fcd5ce' : '#2c3540'
-          } 
-        />
+      {/* 1. Luminous Sky Backdrop */}
+      <mesh position={[0, 7, -19]}>
+        <planeGeometry args={[60, 26]} />
+        <meshBasicMaterial color={skyColor} />
       </mesh>
 
-      {/* Pine Trees outside window */}
-      {[-8, -5, -2, 2, 5, 8, 11].map((x, i) => (
-        <group key={i} position={[x + (i % 2) * 0.5, 0, -12 - (i % 3)]}>
-          {/* Trunk */}
-          <mesh position={[0, 1.5, 0]}>
-            <cylinderGeometry args={[0.2, 0.3, 3, 6]} />
-            <meshStandardMaterial color="#2d1c12" roughness={0.9} />
+      {/* 2. Soft Mountain Ridge in Distance */}
+      <group position={[0, 2, -18]}>
+        {[-18, -6, 6, 18].map((x, i) => (
+          <mesh key={i} position={[x, 2 + (i % 2) * 1.5, 0]}>
+            <coneGeometry args={[9, 8, 4]} />
+            <meshBasicMaterial color={weather === 'sunset' ? '#8a4b38' : weather === 'night' ? '#0d1522' : '#4d6270'} />
           </mesh>
-          {/* Foliage Cones */}
-          <mesh position={[0, 3.2, 0]}>
-            <coneGeometry args={[1.5, 2.5, 7]} />
-            <meshStandardMaterial 
-              color={weather === 'snow' ? '#e2ebf0' : weather === 'sakura' ? '#e5989b' : '#1e3827'} 
-              roughness={0.8}
-            />
-          </mesh>
-          <mesh position={[0, 4.5, 0]}>
-            <coneGeometry args={[1.1, 2.2, 7]} />
-            <meshStandardMaterial 
-              color={weather === 'snow' ? '#ffffff' : weather === 'sakura' ? '#ffb4a2' : '#274732'} 
-              roughness={0.8}
-            />
-          </mesh>
-        </group>
-      ))}
+        ))}
+      </group>
 
-      {/* Moon or Sun in sky */}
-      {weather === 'night' && (
-        <mesh position={[6, 9, -17]}>
-          <circleGeometry args={[1.2, 32]} />
-          <meshBasicMaterial color="#fffae0" />
+      {/* 3. Outdoor Pine Trees (Layered Depth) */}
+      {[-12, -9, -6, -3, 0, 3, 6, 9, 12, 15].map((x, i) => {
+        const z = -10 - (i % 3) * 2.5
+        const scale = 0.9 + (i % 4) * 0.2
+        return (
+          <group key={i} position={[x + (i % 2) * 0.4, 0, z]} scale={[scale, scale, scale]}>
+            {/* Trunk */}
+            <mesh position={[0, 1.4, 0]}>
+              <cylinderGeometry args={[0.18, 0.28, 2.8, 8]} />
+              <meshStandardMaterial color="#362217" roughness={0.9} />
+            </mesh>
+            {/* 3-Tier Pine Foliage */}
+            <mesh position={[0, 3.2, 0]}>
+              <coneGeometry args={[1.6, 2.4, 8]} />
+              <meshStandardMaterial color={foliageColor} roughness={0.7} />
+            </mesh>
+            <mesh position={[0, 4.4, 0]}>
+              <coneGeometry args={[1.2, 2.1, 8]} />
+              <meshStandardMaterial color={foliageColor} roughness={0.7} />
+            </mesh>
+            <mesh position={[0, 5.4, 0]}>
+              <coneGeometry args={[0.8, 1.8, 8]} />
+              <meshStandardMaterial color={foliageColor} roughness={0.7} />
+            </mesh>
+          </group>
+        )
+      })}
+
+      {/* 4. Outdoor Ground Terrain with Soft Grass/Snow */}
+      <mesh position={[0, -0.05, -12]} rotation={[-Math.PI * 0.5, 0, 0]}>
+        <planeGeometry args={[50, 25]} />
+        <meshStandardMaterial color={weather === 'snow' ? '#edf2f4' : '#2b3a2f'} roughness={0.9} />
+      </mesh>
+
+      {/* Celestial Bodies */}
+      {weather === 'sunset' && (
+        <mesh position={[4, 6, -18]}>
+          <circleGeometry args={[2.8, 32]} />
+          <meshBasicMaterial color="#ffe4b5" />
         </mesh>
       )}
 
-      {weather === 'sunset' && (
-        <mesh position={[0, 5, -17]}>
-          <circleGeometry args={[2.5, 32]} />
-          <meshBasicMaterial color="#ffa34d" />
+      {weather === 'night' && (
+        <mesh position={[8, 10, -18]}>
+          <circleGeometry args={[1.4, 32]} />
+          <meshBasicMaterial color="#fffbe6" />
         </mesh>
       )}
 
       {/* Particles */}
       {weather === 'rain' && (
         <points ref={rainRef} geometry={rainGeo}>
-          <pointsMaterial 
-            color="#8fbcdb" 
-            size={0.12} 
-            transparent 
-            opacity={0.65} 
-          />
+          <pointsMaterial color="#a9cce3" size={0.14} transparent opacity={0.75} />
         </points>
       )}
 
       {weather === 'snow' && (
         <points ref={snowRef} geometry={snowGeo}>
-          <pointsMaterial 
-            color="#ffffff" 
-            size={0.25} 
-            transparent 
-            opacity={0.85} 
-          />
+          <pointsMaterial color="#ffffff" size={0.28} transparent opacity={0.9} />
         </points>
       )}
 
       {weather === 'sakura' && (
         <points ref={sakuraRef} geometry={sakuraGeo}>
-          <pointsMaterial 
-            color="#ffb7b2" 
-            size={0.28} 
-            transparent 
-            opacity={0.8} 
-          />
+          <pointsMaterial color="#ffcbf2" size={0.3} transparent opacity={0.85} />
         </points>
       )}
     </group>

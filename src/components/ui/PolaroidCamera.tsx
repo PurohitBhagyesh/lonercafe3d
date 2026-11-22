@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Camera, X, Download, Sparkles } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Camera, X, Download } from 'lucide-react'
 import { soundEngine } from '../../audio/soundEngine'
 import { useGameStore } from '../../store/gameStore'
 
@@ -11,25 +11,36 @@ export function PolaroidCamera() {
     soundEngine.playCameraShutter()
     const canvas = document.querySelector('canvas')
     if (!canvas) return
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95)
     setSnapshotUrl(dataUrl)
   }
 
+  // Listen to keyboard shortcut [P] and custom event from SanctuaryTopBar
+  useEffect(() => {
+    const handleCustomCapture = () => capturePhoto()
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        (e.code === 'KeyP') &&
+        (e.target as HTMLElement).tagName !== 'INPUT' &&
+        (e.target as HTMLElement).tagName !== 'TEXTAREA'
+      ) {
+        capturePhoto()
+      }
+    }
+
+    window.addEventListener('take-polaroid', handleCustomCapture)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('take-polaroid', handleCustomCapture)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
+
   return (
     <>
-      {/* Floating Shutter Button in bottom corner (when playing) */}
-      <button
-        onClick={capturePhoto}
-        className="fixed bottom-6 right-24 z-30 flex items-center gap-2 bg-[#251710]/90 hover:bg-[#382318] text-[#f4ede4] px-3.5 py-2 rounded-full border border-amber-400/30 shadow-xl backdrop-blur-md transition active:scale-95 text-xs font-mono"
-        title="Capture Polaroid Photo [P]"
-      >
-        <Camera className="w-4 h-4 text-amber-300" />
-        <span className="hidden sm:inline">Polaroid</span>
-      </button>
-
-      {/* Polaroid Photo Modal */}
+      {/* Polaroid Photo Modal (when photo captured) */}
       {snapshotUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
           <div className="relative bg-[#fcf9f2] p-4 pb-8 rounded-lg shadow-2xl border border-stone-300 max-w-sm w-full flex flex-col items-center rotate-[-1.5deg] animate-in fade-in zoom-in duration-300">
             {/* Close button */}
             <button

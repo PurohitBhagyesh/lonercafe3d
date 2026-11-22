@@ -3,10 +3,6 @@ import {
   Armchair, 
   BookOpen, 
   Music, 
-  Coffee, 
-  Sliders, 
-  Users, 
-  HandMetal,
   Move
 } from 'lucide-react'
 import { useGameStore } from '../../store/gameStore'
@@ -17,16 +13,30 @@ export function MobileControls() {
   const { 
     mode, 
     setMode, 
-    pauseGame,
     currentSittingSpot, 
     standUp, 
     sitDown, 
-    heldItem, 
-    setHeldItem, 
-    placeItemOnTable, 
-    activePrompt,
     promptAction
   } = useGameStore()
+
+  const [isTouchDevice, setIsTouchDevice] = useState(false)
+
+  // Only activate virtual joystick on genuine mobile touchscreens (phones & tablets)
+  useEffect(() => {
+    const checkTouch = () => {
+      const hasTouch = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
+      const isCoarsePointer = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
+      const isMobileUA = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      const isSmallScreen = typeof window !== 'undefined' && window.innerWidth <= 1024
+
+      // STRICT CHECK: Must have touch capability AND be a coarse pointer (finger touch) or mobile user agent
+      setIsTouchDevice(hasTouch && (isCoarsePointer || isMobileUA) && isSmallScreen)
+    }
+
+    checkTouch()
+    window.addEventListener('resize', checkTouch)
+    return () => window.removeEventListener('resize', checkTouch)
+  }, [])
 
   // Joystick touch tracking
   const joystickBaseRef = useRef<HTMLDivElement>(null)
@@ -39,10 +49,11 @@ export function MobileControls() {
   const lastLookPos = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
+    if (!isTouchDevice) return
+
     const handleTouchStart = (e: TouchEvent) => {
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i]
-        // Check if touch is on right side of screen (for looking)
         if (touch.clientX > window.innerWidth * 0.45 && lookTouchId.current === null) {
           lookTouchId.current = touch.identifier
           lastLookPos.current = { x: touch.clientX, y: touch.clientY }
@@ -83,9 +94,8 @@ export function MobileControls() {
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchcancel', handleTouchEnd)
     }
-  }, [])
+  }, [isTouchDevice])
 
-  // Joystick touch handlers
   const onJoystickTouchStart = (e: React.TouchEvent) => {
     const touch = e.changedTouches[0]
     joystickTouchId.current = touch.identifier
@@ -136,9 +146,12 @@ export function MobileControls() {
     touchState.moveY = dy / maxDist
   }
 
+  // Never render mobile joystick on desktop Safari / Chrome!
+  if (!isTouchDevice) return null
+
   return (
     <div className="fixed inset-0 pointer-events-none z-30 select-none">
-      {/* 1. Left Virtual Joystick (only when walking) */}
+      {/* Virtual Joystick (Mobile Only) */}
       {mode === 'walking' && (
         <div
           ref={joystickBaseRef}
@@ -146,30 +159,28 @@ export function MobileControls() {
           onTouchMove={onJoystickTouchMove}
           onTouchEnd={onJoystickTouchEnd}
           onTouchCancel={onJoystickTouchEnd}
-          className="pointer-events-auto absolute bottom-8 left-6 w-28 h-28 rounded-full bg-black/35 backdrop-blur-sm border-2 border-white/20 flex items-center justify-center touch-none shadow-lg"
+          className="pointer-events-auto absolute bottom-8 left-6 w-28 h-28 rounded-full bg-black/50 backdrop-blur-md border border-white/30 flex items-center justify-center touch-none shadow-2xl"
         >
-          {/* Knob */}
           <div
-            className="w-12 h-12 rounded-full bg-amber-500/80 border border-white/50 shadow flex items-center justify-center transition-transform"
+            className="w-12 h-12 rounded-full bg-amber-600/95 border border-white/50 shadow-md flex items-center justify-center transition-transform"
             style={{
               transform: `translate(${knobPos.x}px, ${knobPos.y}px)`
             }}
           >
-            <Move className="w-5 h-5 text-white/80" />
+            <Move className="w-5 h-5 text-white/90" />
           </div>
         </div>
       )}
 
-      {/* 2. Right Quick Action Buttons */}
+      {/* Right Quick Action Mobile Buttons */}
       <div className="pointer-events-auto absolute bottom-8 right-6 flex flex-col gap-2.5 items-end">
-        {/* Sit / Stand button */}
         {mode === 'sitting' ? (
           <button
             onClick={() => {
               soundEngine.playSitSound()
               standUp()
             }}
-            className="flex items-center gap-2 bg-amber-600/90 text-white px-4 py-2.5 rounded-full border border-amber-300 shadow-xl backdrop-blur-md active:scale-95 transition"
+            className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2.5 rounded-full border border-amber-300 shadow-xl backdrop-blur-md active:scale-95 transition"
           >
             <Armchair className="w-4 h-4" />
             <span className="text-xs font-mono font-bold">Stand Up</span>
@@ -197,7 +208,6 @@ export function MobileControls() {
           </button>
         )}
 
-        {/* Quick Open Diary */}
         <button
           onClick={() => {
             soundEngine.playPageFlip()
@@ -209,7 +219,6 @@ export function MobileControls() {
           <span className="text-[11px] font-mono">Diary</span>
         </button>
 
-        {/* Quick Open iPod */}
         <button
           onClick={() => {
             soundEngine.playIpodClick()
@@ -219,21 +228,6 @@ export function MobileControls() {
         >
           <Music className="w-4 h-4 text-amber-400" />
           <span className="text-[11px] font-mono">iPod</span>
-        </button>
-      </div>
-
-      {/* 3. Top Right Pause / Sanctuary Menu Button */}
-      <div className="pointer-events-auto absolute top-5 right-5 flex items-center gap-2">
-        <button
-          onClick={() => {
-            soundEngine.playIpodClick()
-            pauseGame()
-          }}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#22160e]/90 hover:bg-[#382318] text-amber-200 border border-[#593d2b]/60 shadow-lg backdrop-blur-md transition active:scale-95"
-          title="Pause & Sanctuary Menu"
-        >
-          <Sliders className="w-3.5 h-3.5 text-amber-400" />
-          <span className="text-[11px] font-mono">Menu [ESC]</span>
         </button>
       </div>
     </div>
