@@ -30,6 +30,8 @@ export function MainMenu() {
     setWorldConfig,
     reduceMotion,
     setReduceMotion,
+    smoothAnimations,
+    setSmoothAnimations,
     fov,
     setFov,
     mouseSensitivity,
@@ -416,6 +418,24 @@ export function MainMenu() {
             {/* Motion & Comfort Tab */}
             {settingsSubTab === 'motion' && (
               <div className="space-y-4 text-xs font-mono">
+                {/* Smooth Animations */}
+                <div className="flex items-center justify-between bg-[#140b06] p-3 rounded-xl border border-[#3d2417]">
+                  <div>
+                    <span className="font-bold text-amber-200 block mb-0.5">Smooth Animations & Damping</span>
+                    <span className="text-[11px] text-stone-400 block">
+                      {smoothAnimations
+                        ? 'Silky camera damping & walking inertia (Cinematic feel)'
+                        : 'Snappy 1:1 camera & direct movement (Instant response)'}
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={smoothAnimations}
+                    onChange={(e) => setSmoothAnimations(e.target.checked)}
+                    className="accent-amber-500 w-5 h-5 cursor-pointer ml-4"
+                  />
+                </div>
+
                 <div className="flex items-center justify-between bg-[#140b06] p-3 rounded-xl border border-[#3d2417]">
                   <div>
                     <span className="font-bold text-amber-200 block mb-0.5">Reduce Motion (Comfort Mode)</span>

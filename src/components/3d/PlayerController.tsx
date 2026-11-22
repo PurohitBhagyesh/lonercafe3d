@@ -27,6 +27,7 @@ export function PlayerController() {
     mouseSensitivity,
     invertY,
     reduceMotion,
+    smoothAnimations,
     keyBindings,
     heldItem,
     setHeldItem,
@@ -220,6 +221,9 @@ export function PlayerController() {
         } else if (e.code === 'KeyC') {
           soundEngine.playIpodClick()
           setMode(mode === 'brewing' ? 'walking' : 'brewing')
+        } else if (e.code === 'KeyV') {
+          soundEngine.playIpodClick()
+          useGameStore.getState().toggleMute()
         }
       }
     }
@@ -291,15 +295,20 @@ export function PlayerController() {
       const targetPos = new THREE.Vector3(...currentSittingSpot.cameraPosition)
       const targetLook = new THREE.Vector3(...currentSittingSpot.lookAt)
 
-      camera.position.x = THREE.MathUtils.damp(camera.position.x, targetPos.x, 6, delta)
-      camera.position.y = THREE.MathUtils.damp(camera.position.y, targetPos.y, 6, delta)
-      camera.position.z = THREE.MathUtils.damp(camera.position.z, targetPos.z, 6, delta)
-      
-      const currentLook = new THREE.Vector3()
-      camera.getWorldDirection(currentLook)
-      const lookDelta = targetLook.clone().sub(camera.position).normalize()
-      currentLook.lerp(lookDelta, delta * 5)
-      camera.lookAt(camera.position.clone().add(currentLook))
+      if (smoothAnimations && !reduceMotion) {
+        camera.position.x = THREE.MathUtils.damp(camera.position.x, targetPos.x, 6, delta)
+        camera.position.y = THREE.MathUtils.damp(camera.position.y, targetPos.y, 6, delta)
+        camera.position.z = THREE.MathUtils.damp(camera.position.z, targetPos.z, 6, delta)
+        
+        const currentLook = new THREE.Vector3()
+        camera.getWorldDirection(currentLook)
+        const lookDelta = targetLook.clone().sub(camera.position).normalize()
+        currentLook.lerp(lookDelta, delta * 5)
+        camera.lookAt(camera.position.clone().add(currentLook))
+      } else {
+        camera.position.copy(targetPos)
+        camera.lookAt(targetLook)
+      }
 
       setActivePrompt('Press [E] or Space to Stand Up', () => {
         soundEngine.playSitSound()
@@ -321,8 +330,8 @@ export function PlayerController() {
       touchState.lookDeltaY = 0
     }
 
-    // Smooth camera damping (silky, responsive, zero-jitter)
-    if (reduceMotion) {
+    // Smooth camera damping vs instant 1:1 camera
+    if (!smoothAnimations || reduceMotion) {
       currentEuler.current.copy(targetEuler.current)
     } else {
       const lookDampSpeed = 38
@@ -344,8 +353,13 @@ export function PlayerController() {
       moveDir.applyEuler(new THREE.Euler(0, currentEuler.current.y, 0))
 
       const targetSpeed = 2.7
-      vel.current.x = THREE.MathUtils.damp(vel.current.x, moveDir.x * targetSpeed, 14, delta)
-      vel.current.z = THREE.MathUtils.damp(vel.current.z, moveDir.z * targetSpeed, 14, delta)
+      if (smoothAnimations) {
+        vel.current.x = THREE.MathUtils.damp(vel.current.x, moveDir.x * targetSpeed, 14, delta)
+        vel.current.z = THREE.MathUtils.damp(vel.current.z, moveDir.z * targetSpeed, 14, delta)
+      } else {
+        vel.current.x = moveDir.x * targetSpeed
+        vel.current.z = moveDir.z * targetSpeed
+      }
 
       // Head-bobbing (disabled if reduceMotion is on)
       if (!reduceMotion) {
@@ -362,9 +376,15 @@ export function PlayerController() {
         footstepTimer.current = 0
       }
     } else {
-      vel.current.x = THREE.MathUtils.damp(vel.current.x, 0, 14, delta)
-      vel.current.z = THREE.MathUtils.damp(vel.current.z, 0, 14, delta)
-      camera.position.y = THREE.MathUtils.damp(camera.position.y, 1.45, 8, delta)
+      if (smoothAnimations) {
+        vel.current.x = THREE.MathUtils.damp(vel.current.x, 0, 14, delta)
+        vel.current.z = THREE.MathUtils.damp(vel.current.z, 0, 14, delta)
+        camera.position.y = THREE.MathUtils.damp(camera.position.y, 1.45, 8, delta)
+      } else {
+        vel.current.x = 0
+        vel.current.z = 0
+        camera.position.y = 1.45
+      }
     }
 
     // Apply movement

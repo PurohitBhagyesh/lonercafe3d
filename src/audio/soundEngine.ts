@@ -13,7 +13,10 @@ class SoundEngine {
   private chordInterval: number | null = null
   private weatherAmbientInterval: number | null = null
   private currentWeather: string = 'rain'
+  private currentAmbientMode: string = 'auto'
   private rainFilter: BiquadFilterNode | null = null
+  private isMuted: boolean = false
+  private savedMasterVolume: number = 0.8
 
   private initContext() {
     if (!this.ctx) {
@@ -453,6 +456,172 @@ class SoundEngine {
       osc.frequency.setValueAtTime(4500, t)
 
       gain.gain.setValueAtTime(0.012, t)
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.04)
+
+      osc.connect(gain)
+      gain.connect(this.sfxGain)
+      osc.start(t)
+      osc.stop(t + 0.05)
+    }
+  }
+
+  // --- MUTE / UNMUTE BACKGROUND & MASTER SOUND ---
+  public setMuted(muted: boolean) {
+    this.initContext()
+    this.isMuted = muted
+    if (!this.ctx || !this.masterGain) return
+    const now = this.ctx.currentTime
+    if (muted) {
+      this.masterGain.gain.setTargetAtTime(0, now, 0.04)
+      if (this.customAudio) {
+        this.customAudio.muted = true
+      }
+    } else {
+      this.masterGain.gain.setTargetAtTime(this.savedMasterVolume, now, 0.05)
+      if (this.customAudio) {
+        this.customAudio.muted = false
+      }
+    }
+  }
+
+  public getIsMuted(): boolean {
+    return this.isMuted
+  }
+
+  // --- DIFFERENT AMBIENT SOUNDSCAPES ---
+  public setCustomAmbient(ambient: string, weather: string) {
+    this.initContext()
+    this.currentAmbientMode = ambient
+
+    if (this.weatherAmbientInterval) {
+      clearInterval(this.weatherAmbientInterval)
+      this.weatherAmbientInterval = null
+    }
+
+    if (!this.ctx || !this.rainGain) return
+    const now = this.ctx.currentTime
+
+    if (ambient === 'auto') {
+      this.setWeatherAmbient(weather)
+      return
+    }
+
+    if (ambient === 'rain-thunder') {
+      // Deep pouring rain + rolling distant thunder
+      this.rainGain.gain.setTargetAtTime(0.55, now, 0.4)
+      if (this.rainFilter) this.rainFilter.frequency.setTargetAtTime(1150, now, 0.4)
+      this.weatherAmbientInterval = window.setInterval(() => {
+        if (Math.random() > 0.4) {
+          this.playDistantThunder()
+        }
+      }, 6500)
+    } else if (ambient === 'cafe-bustle') {
+      // Warm room tone + periodic steam hiss and porcelain clinks
+      this.rainGain.gain.setTargetAtTime(0.2, now, 0.4)
+      if (this.rainFilter) this.rainFilter.frequency.setTargetAtTime(800, now, 0.4)
+      this.weatherAmbientInterval = window.setInterval(() => {
+        const rand = Math.random()
+        if (rand < 0.45) {
+          this.playSteamWandHiss()
+        } else if (rand < 0.8) {
+          this.playCoffeeClink()
+        }
+      }, 4200)
+    } else if (ambient === 'fireplace') {
+      // Warm low crackle + popping cedar wood
+      this.rainGain.gain.setTargetAtTime(0.16, now, 0.4)
+      if (this.rainFilter) this.rainFilter.frequency.setTargetAtTime(450, now, 0.4)
+      this.weatherAmbientInterval = window.setInterval(() => {
+        this.playFireplaceCrackle()
+      }, 1000)
+    } else if (ambient === 'sakura-chimes') {
+      // Spring breeze + pentatonic wind chimes + delicate birdsong
+      this.rainGain.gain.setTargetAtTime(0.12, now, 0.4)
+      if (this.rainFilter) this.rainFilter.frequency.setTargetAtTime(600, now, 0.4)
+      this.weatherAmbientInterval = window.setInterval(() => {
+        if (Math.random() > 0.4) {
+          this.playWindChime()
+        } else {
+          this.playSpringBird()
+        }
+      }, 4800)
+    } else if (ambient === 'winter-wind') {
+      // Sub-bass winter howling wind
+      this.rainGain.gain.setTargetAtTime(0.26, now, 0.4)
+      if (this.rainFilter) this.rainFilter.frequency.setTargetAtTime(360, now, 0.4)
+    } else if (ambient === 'midnight-crickets') {
+      // Peaceful night breeze + nocturnal crickets
+      this.rainGain.gain.setTargetAtTime(0.08, now, 0.4)
+      this.weatherAmbientInterval = window.setInterval(() => {
+        this.playNightCricket()
+      }, 3600)
+    }
+  }
+
+  // Distant low-frequency rolling thunder
+  public playDistantThunder() {
+    this.initContext()
+    if (!this.ctx || !this.rainGain) return
+    const now = this.ctx.currentTime
+    const osc = this.ctx.createOscillator()
+    const gain = this.ctx.createGain()
+    const filter = this.ctx.createBiquadFilter()
+
+    osc.type = 'triangle'
+    osc.frequency.setValueAtTime(68, now)
+    osc.frequency.exponentialRampToValueAtTime(30, now + 3.0)
+
+    filter.type = 'lowpass'
+    filter.frequency.setValueAtTime(130, now)
+
+    gain.gain.setValueAtTime(0, now)
+    gain.gain.linearRampToValueAtTime(0.16, now + 0.35)
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.4)
+
+    osc.connect(filter)
+    filter.connect(gain)
+    gain.connect(this.rainGain)
+
+    osc.start(now)
+    osc.stop(now + 3.5)
+  }
+
+  // Steam wand hiss for cafe ambience
+  public playSteamWandHiss() {
+    this.initContext()
+    if (!this.ctx || !this.sfxGain) return
+    const bufferSize = this.ctx.sampleRate * 0.7
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate)
+    const data = buffer.getChannelData(0)
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufferSize) * Math.PI) * 0.07
+    }
+    const noise = this.ctx.createBufferSource()
+    noise.buffer = buffer
+    const filter = this.ctx.createBiquadFilter()
+    filter.type = 'bandpass'
+    filter.frequency.setValueAtTime(1750, this.ctx.currentTime)
+    filter.Q.value = 1.6
+
+    noise.connect(filter)
+    filter.connect(this.sfxGain)
+    noise.start()
+  }
+
+  // Crackling popping fireplace embers
+  public playFireplaceCrackle() {
+    this.initContext()
+    if (!this.ctx || !this.sfxGain) return
+    const pops = 1 + Math.floor(Math.random() * 3)
+    const now = this.ctx.currentTime
+    for (let p = 0; p < pops; p++) {
+      const t = now + p * 0.12 + Math.random() * 0.08
+      const osc = this.ctx.createOscillator()
+      const gain = this.ctx.createGain()
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(180 + Math.random() * 350, t)
+
+      gain.gain.setValueAtTime(0.045, t)
       gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.04)
 
       osc.connect(gain)

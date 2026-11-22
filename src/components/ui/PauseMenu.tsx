@@ -24,12 +24,18 @@ export function PauseMenu() {
     worldName,
     reduceMotion,
     setReduceMotion,
+    smoothAnimations,
+    setSmoothAnimations,
     fov,
     setFov,
     mouseSensitivity,
     setMouseSensitivity,
     invertY,
     setInvertY,
+    isMuted,
+    toggleMute,
+    selectedAmbient,
+    setSelectedAmbient,
     masterVolume,
     ambientVolume,
     musicVolume,
@@ -187,6 +193,24 @@ export function PauseMenu() {
         {/* SETTINGS TAB */}
         {activeTab === 'settings' && (
           <div className="space-y-3.5 text-xs font-mono">
+            {/* Smooth Animations (Damping & Inertia) */}
+            <div className="flex items-center justify-between bg-[#140b06] p-3 rounded-xl border border-[#3d2417]">
+              <div>
+                <span className="font-bold text-amber-200 block">Smooth Animations & Damping</span>
+                <span className="text-[10px] text-stone-400 block">
+                  {smoothAnimations
+                    ? 'Silky camera damping & walking inertia (Cinematic)'
+                    : 'Snappy 1:1 camera & direct movement (Instant/Esports)'}
+                </span>
+              </div>
+              <input
+                type="checkbox"
+                checked={smoothAnimations}
+                onChange={(e) => setSmoothAnimations(e.target.checked)}
+                className="accent-amber-500 w-5 h-5 cursor-pointer ml-3"
+              />
+            </div>
+
             {/* Reduce Motion */}
             <div className="flex items-center justify-between bg-[#140b06] p-3 rounded-xl border border-[#3d2417]">
               <div>

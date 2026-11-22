@@ -11,12 +11,14 @@ import {
   Sliders,
   Camera,
   Music,
-  BookOpen,
-  Coffee,
   Users,
-  Armchair
+  Armchair,
+  Volume2,
+  VolumeX,
+  Waves,
+  ChevronDown
 } from 'lucide-react'
-import { useGameStore, WeatherType, TimeOfDay } from '../../store/gameStore'
+import { useGameStore, WeatherType, TimeOfDay, AmbientSoundType } from '../../store/gameStore'
 import { soundEngine } from '../../audio/soundEngine'
 import { QRCodeModal } from './QRCodeModal'
 
@@ -36,6 +38,16 @@ const TIMES: Array<{ id: TimeOfDay; label: string; icon: React.ReactNode }> = [
   { id: 'midnight', label: 'Midnight', icon: <Moon className="w-3.5 h-3.5" /> },
 ]
 
+const AMBIENT_SOUNDS: Array<{ id: AmbientSoundType; label: string; icon: string }> = [
+  { id: 'auto', label: 'Match Weather', icon: '🌤️' },
+  { id: 'rain-thunder', label: 'Rain & Thunder', icon: '🌧️' },
+  { id: 'cafe-bustle', label: 'Cozy Café & Steam', icon: '☕' },
+  { id: 'fireplace', label: 'Crackling Fireplace', icon: '🔥' },
+  { id: 'sakura-chimes', label: 'Sakura & Wind Chimes', icon: '🌸' },
+  { id: 'winter-wind', label: 'Blizzard Wind', icon: '❄️' },
+  { id: 'midnight-crickets', label: 'Midnight Crickets', icon: '🌙' },
+]
+
 export function SanctuaryTopBar() {
   const { 
     weather, 
@@ -44,13 +56,18 @@ export function SanctuaryTopBar() {
     setTimeOfDay, 
     pauseGame, 
     mode, 
-    setMode, 
     standUp,
+    setMode,
     worldCode,
-    connectedFriend
+    connectedFriend,
+    isMuted,
+    toggleMute,
+    selectedAmbient,
+    setSelectedAmbient
   } = useGameStore()
 
   const [showQR, setShowQR] = useState(false)
+  const [showAmbientMenu, setShowAmbientMenu] = useState(false)
 
   const handleWeather = (w: WeatherType) => {
     soundEngine.playIpodClick()
@@ -65,6 +82,8 @@ export function SanctuaryTopBar() {
   const handlePolaroid = () => {
     window.dispatchEvent(new CustomEvent('take-polaroid'))
   }
+
+  const currentAmbientObj = AMBIENT_SOUNDS.find(a => a.id === selectedAmbient) || AMBIENT_SOUNDS[0]
 
   return (
     <>
@@ -94,12 +113,12 @@ export function SanctuaryTopBar() {
           </button>
         </div>
 
-        {/* Center: Unified Single-Row HUD (Sky Weather + Time of Day) */}
-        <div className="pointer-events-auto flex items-center gap-1 sm:gap-2 bg-[#1b120c]/90 backdrop-blur-md px-2.5 sm:px-3 py-1.5 rounded-full border border-[#442c1d]/80 shadow-2xl text-[#f4ede4]">
+        {/* Center: Unified Single-Row HUD (Sky Weather + Time + Ambient Selector) */}
+        <div className="pointer-events-auto relative flex items-center gap-1 sm:gap-2 bg-[#1b120c]/90 backdrop-blur-md px-2.5 sm:px-3 py-1.5 rounded-full border border-[#442c1d]/80 shadow-2xl text-[#f4ede4]">
           
           {/* Weather Selector */}
           <div className="flex items-center gap-0.5 sm:gap-1">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-stone-400 mr-1 hidden xl:inline">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-stone-400 mr-1 hidden 2xl:inline">
               Sky:
             </span>
             {WEATHERS.map((w) => {
@@ -127,7 +146,7 @@ export function SanctuaryTopBar() {
 
           {/* Time of Day Selector */}
           <div className="flex items-center gap-0.5 sm:gap-1">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-stone-400 mr-1 hidden xl:inline">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-stone-400 mr-1 hidden 2xl:inline">
               Time:
             </span>
             {TIMES.map((t) => {
@@ -149,11 +168,83 @@ export function SanctuaryTopBar() {
               )
             })}
           </div>
+
+          {/* Divider */}
+          <div className="w-[1px] h-4 bg-[#4a3325] mx-0.5 sm:mx-1 hidden lg:block" />
+
+          {/* Different Ambient Sounds Menu Button */}
+          <div className="relative hidden lg:block">
+            <button
+              onClick={() => {
+                soundEngine.playIpodClick()
+                setShowAmbientMenu(v => !v)
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#2b1910] hover:bg-[#3d2417] text-amber-200 border border-[#523320] transition active:scale-95"
+              title="Change Background Ambient Sound"
+            >
+              <Waves className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[11px]">{currentAmbientObj.icon} {currentAmbientObj.label}</span>
+              <ChevronDown className="w-3 h-3 text-stone-400" />
+            </button>
+
+            {/* Ambient Sound Dropdown Popover */}
+            {showAmbientMenu && (
+              <div className="absolute top-10 right-0 w-56 bg-[#24160e]/95 backdrop-blur-md border border-[#523320] rounded-2xl shadow-2xl p-2 z-50 text-left space-y-1">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-stone-400 px-2 py-1 block">
+                  Ambient Atmosphere:
+                </span>
+                {AMBIENT_SOUNDS.map((amb) => {
+                  const isCur = selectedAmbient === amb.id
+                  return (
+                    <button
+                      key={amb.id}
+                      onClick={() => {
+                        soundEngine.playIpodClick()
+                        setSelectedAmbient(amb.id)
+                        setShowAmbientMenu(false)
+                      }}
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-mono transition ${
+                        isCur
+                          ? 'bg-amber-600/90 text-white font-bold'
+                          : 'text-stone-300 hover:bg-white/10'
+                      }`}
+                    >
+                      <span className="text-sm">{amb.icon}</span>
+                      <span>{amb.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Right: Quick Indie Tools + Stand Up / ESC Menu */}
-        <div className="pointer-events-auto flex items-center gap-2">
+        {/* Right: Mute Toggle + Quick Indie Tools + Stand Up / ESC Menu */}
+        <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
           
+          {/* 1-Click MUTE / UNMUTE Background Sound Button */}
+          <button
+            onClick={() => {
+              soundEngine.playIpodClick()
+              toggleMute()
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-lg backdrop-blur-md transition active:scale-95 text-xs font-mono cursor-pointer ${
+              isMuted
+                ? 'bg-red-950/85 border-red-500/60 text-red-300 shadow-red-950/40'
+                : 'bg-[#1b120c]/85 hover:bg-[#342217] text-stone-300 hover:text-amber-200 border-[#442c1d]/60'
+            }`}
+            title={isMuted ? 'Unmute Audio [V]' : 'Mute Background Audio [V]'}
+          >
+            {isMuted ? (
+              <VolumeX className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+            ) : (
+              <Volume2 className="w-3.5 h-3.5 text-amber-300" />
+            )}
+            <span className="hidden sm:inline font-bold">
+              {isMuted ? 'Muted' : 'Sound'} <span className="opacity-60 text-[10px]">[V]</span>
+            </span>
+          </button>
+
           {/* If Sitting: prominent Stand Up button */}
           {mode === 'sitting' && (
             <button

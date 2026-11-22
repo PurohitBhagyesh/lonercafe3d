@@ -6,6 +6,15 @@ export type GamePhase = 'menu' | 'playing' | 'paused'
 export type WeatherType = 'rain' | 'snow' | 'sunset' | 'night' | 'sakura'
 export type TimeOfDay = 'dawn' | 'noon' | 'sunset' | 'twilight' | 'midnight'
 
+export type AmbientSoundType = 
+  | 'auto'
+  | 'rain-thunder'
+  | 'cafe-bustle'
+  | 'fireplace'
+  | 'sakura-chimes'
+  | 'winter-wind'
+  | 'midnight-crickets'
+
 export type InteractionMode = 
   | 'walking' 
   | 'sitting' 
@@ -96,6 +105,8 @@ interface GameState {
   // Camera & Accessibility Settings
   reduceMotion: boolean
   setReduceMotion: (val: boolean) => void
+  smoothAnimations: boolean
+  setSmoothAnimations: (val: boolean) => void
   fov: number
   setFov: (val: number) => void
   mouseSensitivity: number
@@ -104,6 +115,12 @@ interface GameState {
   setInvertY: (val: boolean) => void
   keyBindings: KeyBindings
   setKeyBinding: (action: keyof KeyBindings, key: string) => void
+
+  // Mute & Background Sounds
+  isMuted: boolean
+  toggleMute: () => void
+  selectedAmbient: AmbientSoundType
+  setSelectedAmbient: (ambient: AmbientSoundType) => void
 
   // HUD Prompts
   activePrompt: string | null
@@ -239,6 +256,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     localStorage.setItem('loners_reduce_motion', String(val))
     set({ reduceMotion: val })
   },
+  smoothAnimations: localStorage.getItem('loners_smooth_animations') !== 'false',
+  setSmoothAnimations: (val) => {
+    localStorage.setItem('loners_smooth_animations', String(val))
+    set({ smoothAnimations: val })
+  },
   fov: 72,
   setFov: (val) => set({ fov: val }),
   mouseSensitivity: parseFloat(localStorage.getItem('loners_sensitivity') || '1.0'),
@@ -250,6 +272,21 @@ export const useGameStore = create<GameState>((set, get) => ({
   setInvertY: (val) => {
     localStorage.setItem('loners_invert_y', String(val))
     set({ invertY: val })
+  },
+
+  // Mute & Background Sounds
+  isMuted: localStorage.getItem('loners_muted') === 'true',
+  toggleMute: () => set((state) => {
+    const next = !state.isMuted
+    localStorage.setItem('loners_muted', String(next))
+    soundEngine.setMuted(next)
+    return { isMuted: next }
+  }),
+  selectedAmbient: (localStorage.getItem('loners_ambient') as AmbientSoundType) || 'auto',
+  setSelectedAmbient: (ambient) => {
+    localStorage.setItem('loners_ambient', ambient)
+    soundEngine.setCustomAmbient(ambient, get().weather)
+    set({ selectedAmbient: ambient })
   },
   keyBindings: {
     forward: 'KeyW',
