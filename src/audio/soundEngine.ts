@@ -11,6 +11,9 @@ class SoundEngine {
   private customAudio: HTMLAudioElement | null = null
   private isLoFiLoopRunning = false
   private chordInterval: number | null = null
+  private weatherAmbientInterval: number | null = null
+  private currentWeather: string = 'rain'
+  private rainFilter: BiquadFilterNode | null = null
 
   private initContext() {
     if (!this.ctx) {
@@ -83,12 +86,12 @@ class SoundEngine {
     whiteNoise.loop = true
 
     // Lowpass filter for cozy muffled rain
-    const filter = this.ctx.createBiquadFilter()
-    filter.type = 'lowpass'
-    filter.frequency.value = 950
+    this.rainFilter = this.ctx.createBiquadFilter()
+    this.rainFilter.type = 'lowpass'
+    this.rainFilter.frequency.value = 950
 
-    whiteNoise.connect(filter)
-    filter.connect(this.rainGain)
+    whiteNoise.connect(this.rainFilter)
+    this.rainFilter.connect(this.rainGain)
     whiteNoise.start()
     this.rainNode = whiteNoise
   }
@@ -345,6 +348,118 @@ class SoundEngine {
     gain.connect(this.sfxGain)
     osc.start()
     osc.stop(this.ctx.currentTime + 0.2)
+  }
+
+  // Dynamic Weather Ambient Audio (Rain, Snow, Sakura Breeze & Bells, Night Crickets)
+  public setWeatherAmbient(weather: string) {
+    this.initContext()
+    this.currentWeather = weather
+
+    if (this.weatherAmbientInterval) {
+      clearInterval(this.weatherAmbientInterval)
+      this.weatherAmbientInterval = null
+    }
+
+    if (!this.ctx || !this.rainGain) return
+    const now = this.ctx.currentTime
+
+    if (weather === 'rain') {
+      this.rainGain.gain.setTargetAtTime(0.5, now, 0.4)
+      if (this.rainFilter) this.rainFilter.frequency.setTargetAtTime(950, now, 0.4)
+    } else if (weather === 'snow') {
+      this.rainGain.gain.setTargetAtTime(0.18, now, 0.4)
+      if (this.rainFilter) this.rainFilter.frequency.setTargetAtTime(450, now, 0.4)
+    } else if (weather === 'sakura') {
+      this.rainGain.gain.setTargetAtTime(0.12, now, 0.4)
+      if (this.rainFilter) this.rainFilter.frequency.setTargetAtTime(600, now, 0.4)
+
+      // Start gentle spring wind chime & distant bird calls
+      this.weatherAmbientInterval = window.setInterval(() => {
+        if (this.currentWeather === 'sakura') {
+          if (Math.random() > 0.4) {
+            this.playWindChime()
+          } else {
+            this.playSpringBird()
+          }
+        }
+      }, 5000)
+    } else if (weather === 'night') {
+      this.rainGain.gain.setTargetAtTime(0.08, now, 0.4)
+      this.weatherAmbientInterval = window.setInterval(() => {
+        if (this.currentWeather === 'night') {
+          this.playNightCricket()
+        }
+      }, 4200)
+    } else { // sunset
+      this.rainGain.gain.setTargetAtTime(0.15, now, 0.4)
+      if (this.rainFilter) this.rainFilter.frequency.setTargetAtTime(700, now, 0.4)
+    }
+  }
+
+  // Pentatonic Wind Chime (Crystal bells)
+  public playWindChime() {
+    this.initContext()
+    if (!this.ctx || !this.sfxGain) return
+    const pentatonic = [1318.5, 1479.98, 1661.22, 1975.53, 2217.46, 2637.02]
+    const note = pentatonic[Math.floor(Math.random() * pentatonic.length)]
+    const now = this.ctx.currentTime
+
+    const osc = this.ctx.createOscillator()
+    const gain = this.ctx.createGain()
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(note, now)
+
+    gain.gain.setValueAtTime(0.04, now)
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.2)
+
+    osc.connect(gain)
+    gain.connect(this.sfxGain)
+    osc.start(now)
+    osc.stop(now + 3.3)
+  }
+
+  // Gentle morning spring bird trill
+  public playSpringBird() {
+    this.initContext()
+    if (!this.ctx || !this.sfxGain) return
+    const now = this.ctx.currentTime
+    const osc = this.ctx.createOscillator()
+    const gain = this.ctx.createGain()
+
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(2400, now)
+    osc.frequency.exponentialRampToValueAtTime(2900, now + 0.08)
+    osc.frequency.exponentialRampToValueAtTime(2200, now + 0.18)
+
+    gain.gain.setValueAtTime(0.02, now)
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22)
+
+    osc.connect(gain)
+    gain.connect(this.sfxGain)
+    osc.start(now)
+    osc.stop(now + 0.25)
+  }
+
+  // Night crickets
+  public playNightCricket() {
+    this.initContext()
+    if (!this.ctx || !this.sfxGain) return
+    const now = this.ctx.currentTime
+    for (let c = 0; c < 3; c++) {
+      const t = now + c * 0.08
+      const osc = this.ctx.createOscillator()
+      const gain = this.ctx.createGain()
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(4500, t)
+
+      gain.gain.setValueAtTime(0.012, t)
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.04)
+
+      osc.connect(gain)
+      gain.connect(this.sfxGain)
+      osc.start(t)
+      osc.stop(t + 0.05)
+    }
   }
 }
 

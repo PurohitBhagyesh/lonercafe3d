@@ -3,6 +3,7 @@ import { useThree, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useGameStore, SittingSpot } from '../../store/gameStore'
 import { soundEngine } from '../../audio/soundEngine'
+import { database } from '../../services/database'
 
 // Virtual touch movement store for mobile
 export const touchState = {
@@ -36,12 +37,14 @@ export function PlayerController() {
   // Player position and velocity
   const pos = useRef(new THREE.Vector3(0, 1.45, 0))
   const vel = useRef(new THREE.Vector3())
-  const euler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
+  const targetEuler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
+  const currentEuler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
   const keys = useRef<{ [key: string]: boolean }>({})
   const isPointerLocked = useRef(false)
   const footstepTimer = useRef(0)
   const headBobTimer = useRef(0)
   const menuCameraAngle = useRef(0)
+  const syncTimer = useRef(0)
 
   // Pre-defined hotspots
   const hotspots: Array<{
@@ -228,16 +231,31 @@ export function PlayerController() {
     const onMouseMove = (e: MouseEvent) => {
       const { gamePhase, mode } = useGameStore.getState()
       if (gamePhase !== 'playing' || !isPointerLocked.current || mode !== 'walking') return
-      const sens = 0.002 * mouseSensitivity
-      euler.current.y -= e.movementX * sens
-      euler.current.x += (invertY ? e.movementY : -e.movementY) * sens
+      const sens = 0.0022 * mouseSensitivity
+      targetEuler.current.y -= e.movementX * sens
+      targetEuler.current.x += (invertY ? e.movementY : -e.movementY) * sens
       // Clamp vertical look between -80 and +80 degrees
-      euler.current.x = Math.max(-Math.PI * 0.44, Math.min(Math.PI * 0.44, euler.current.x))
+      targetEuler.current.x = Math.max(-Math.PI * 0.44, Math.min(Math.PI * 0.44, targetEuler.current.x))
     }
 
     const onPointerLockChange = () => {
       isPointerLocked.current = document.pointerLockElement !== null
     }
+
+    // Companion Broadcast Sync Listener
+    const unsubscribeSync = database.onMessage((payload) => {
+      if (payload.type === 'PLAYER_MOVE') {
+        useGameStore.getState().setConnectedFriend({
+          id: payload.senderId,
+          name: payload.senderName || 'Companion',
+          position: payload.data.position,
+          state: payload.data.state
+        })
+      } else if (payload.type === 'WEATHER_SYNC') {
+        useGameStore.getState().setWeather(payload.data.weather)
+        useGameStore.getState().setTimeOfDay(payload.data.timeOfDay)
+      }
+    })
 
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
@@ -245,6 +263,7 @@ export function PlayerController() {
     document.addEventListener('pointerlockchange', onPointerLockChange)
 
     return () => {
+      unsubscribeSync()
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('mousemove', onMouseMove)
@@ -272,12 +291,14 @@ export function PlayerController() {
       const targetPos = new THREE.Vector3(...currentSittingSpot.cameraPosition)
       const targetLook = new THREE.Vector3(...currentSittingSpot.lookAt)
 
-      camera.position.lerp(targetPos, delta * 3.5)
+      camera.position.x = THREE.MathUtils.damp(camera.position.x, targetPos.x, 6, delta)
+      camera.position.y = THREE.MathUtils.damp(camera.position.y, targetPos.y, 6, delta)
+      camera.position.z = THREE.MathUtils.damp(camera.position.z, targetPos.z, 6, delta)
       
       const currentLook = new THREE.Vector3()
       camera.getWorldDirection(currentLook)
       const lookDelta = targetLook.clone().sub(camera.position).normalize()
-      currentLook.lerp(lookDelta, delta * 4)
+      currentLook.lerp(lookDelta, delta * 5)
       camera.lookAt(camera.position.clone().add(currentLook))
 
       setActivePrompt('Press [E] or Space to Stand Up', () => {
@@ -293,14 +314,22 @@ export function PlayerController() {
     // 3. Touch look controls on mobile
     if (touchState.lookDeltaX !== 0 || touchState.lookDeltaY !== 0) {
       const sens = 0.003 * mouseSensitivity
-      euler.current.y -= touchState.lookDeltaX * sens
-      euler.current.x += (invertY ? touchState.lookDeltaY : -touchState.lookDeltaY) * sens
-      euler.current.x = Math.max(-Math.PI * 0.44, Math.min(Math.PI * 0.44, euler.current.x))
+      targetEuler.current.y -= touchState.lookDeltaX * sens
+      targetEuler.current.x += (invertY ? touchState.lookDeltaY : -touchState.lookDeltaY) * sens
+      targetEuler.current.x = Math.max(-Math.PI * 0.44, Math.min(Math.PI * 0.44, targetEuler.current.x))
       touchState.lookDeltaX = 0
       touchState.lookDeltaY = 0
     }
 
-    camera.quaternion.setFromEuler(euler.current)
+    // Smooth camera damping (silky, responsive, zero-jitter)
+    if (reduceMotion) {
+      currentEuler.current.copy(targetEuler.current)
+    } else {
+      const lookDampSpeed = 38
+      currentEuler.current.x = THREE.MathUtils.damp(currentEuler.current.x, targetEuler.current.x, lookDampSpeed, delta)
+      currentEuler.current.y = THREE.MathUtils.damp(currentEuler.current.y, targetEuler.current.y, lookDampSpeed, delta)
+    }
+    camera.quaternion.setFromEuler(currentEuler.current)
 
     // 4. Calculate movement direction from rebindable keyboard + mobile virtual joystick
     const moveDir = new THREE.Vector3()
@@ -312,16 +341,16 @@ export function PlayerController() {
     if (moveDir.lengthSq() > 0) {
       moveDir.normalize()
       // Transform direction relative to camera yaw
-      moveDir.applyEuler(new THREE.Euler(0, euler.current.y, 0))
+      moveDir.applyEuler(new THREE.Euler(0, currentEuler.current.y, 0))
 
-      const speed = 2.8
-      vel.current.x = moveDir.x * speed
-      vel.current.z = moveDir.z * speed
+      const targetSpeed = 2.7
+      vel.current.x = THREE.MathUtils.damp(vel.current.x, moveDir.x * targetSpeed, 14, delta)
+      vel.current.z = THREE.MathUtils.damp(vel.current.z, moveDir.z * targetSpeed, 14, delta)
 
       // Head-bobbing (disabled if reduceMotion is on)
       if (!reduceMotion) {
-        headBobTimer.current += delta * 10
-        camera.position.y = 1.45 + Math.sin(headBobTimer.current) * 0.035
+        headBobTimer.current += delta * 9.5
+        camera.position.y = 1.45 + Math.sin(headBobTimer.current) * 0.03
       } else {
         camera.position.y = 1.45
       }
@@ -333,9 +362,9 @@ export function PlayerController() {
         footstepTimer.current = 0
       }
     } else {
-      vel.current.x *= 0.8
-      vel.current.z *= 0.8
-      camera.position.y = THREE.MathUtils.lerp(camera.position.y, 1.45, delta * 5)
+      vel.current.x = THREE.MathUtils.damp(vel.current.x, 0, 14, delta)
+      vel.current.z = THREE.MathUtils.damp(vel.current.z, 0, 14, delta)
+      camera.position.y = THREE.MathUtils.damp(camera.position.y, 1.45, 8, delta)
     }
 
     // Apply movement
@@ -348,6 +377,18 @@ export function PlayerController() {
 
     camera.position.x = pos.current.x
     camera.position.z = pos.current.z
+
+    // Live Companion Peer Broadcast Sync every 120ms
+    syncTimer.current += delta
+    if (syncTimer.current > 0.12) {
+      syncTimer.current = 0
+      database.broadcastPlayerState(
+        [pos.current.x, pos.current.y, pos.current.z],
+        currentEuler.current.y,
+        'walking',
+        'Loner'
+      )
+    }
 
     // 5. Proximity hotspot check for interaction prompts
     let foundPrompt: { text: string; action: () => void } | null = null

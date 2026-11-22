@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { soundEngine } from '../audio/soundEngine'
+import { database } from '../services/database'
 
 export type GamePhase = 'menu' | 'playing' | 'paused'
 export type WeatherType = 'rain' | 'snow' | 'sunset' | 'night' | 'sakura'
@@ -292,14 +294,17 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   // Atmosphere
-  weather: (localStorage.getItem('loners_weather') as WeatherType) || 'rain',
+  weather: (localStorage.getItem('loners_weather') as WeatherType) || 'sakura',
   setWeather: (weather) => {
     localStorage.setItem('loners_weather', weather)
+    soundEngine.setWeatherAmbient(weather)
+    database.broadcastWeatherSync(weather, get().timeOfDay)
     set({ weather })
   },
   timeOfDay: (localStorage.getItem('loners_time') as TimeOfDay) || 'sunset',
   setTimeOfDay: (timeOfDay) => {
     localStorage.setItem('loners_time', timeOfDay)
+    database.broadcastWeatherSync(get().weather, timeOfDay)
     set({ timeOfDay })
   },
 
@@ -315,14 +320,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   toggleRadio: () => set((state) => ({ isRadioPlaying: !state.isRadioPlaying })),
 
   // Diary
-  diaryEntries: (() => {
-    try {
-      const saved = localStorage.getItem('loners_diary')
-      return saved ? JSON.parse(saved) : INITIAL_ENTRIES
-    } catch {
-      return INITIAL_ENTRIES
-    }
-  })(),
+  diaryEntries: database.getDiaryEntries(),
   addDiaryEntry: (entryData) => {
     const now = new Date()
     const newEntry: DiaryEntry = {
@@ -333,14 +331,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
     set((state) => {
       const updated = [newEntry, ...state.diaryEntries]
-      localStorage.setItem('loners_diary', JSON.stringify(updated))
+      database.saveDiaryEntries(updated)
       return { diaryEntries: updated }
     })
   },
   deleteDiaryEntry: (id) => {
     set((state) => {
       const updated = state.diaryEntries.filter(e => e.id !== id)
-      localStorage.setItem('loners_diary', JSON.stringify(updated))
+      database.saveDiaryEntries(updated)
       return { diaryEntries: updated }
     })
   },

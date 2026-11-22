@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { MessageSquare, Send, Mic, MicOff, X, Sparkles, ShieldAlert } from 'lucide-react'
 import { useGameStore } from '../../store/gameStore'
 import { soundEngine } from '../../audio/soundEngine'
+import { database } from '../../services/database'
 
 export function QuietChatDrawer() {
   const { 
@@ -25,6 +26,19 @@ export function QuietChatDrawer() {
     }
   }, [chatMessages, isOpen])
 
+  // Sync incoming companion chats
+  useEffect(() => {
+    const unsub = database.onMessage((payload) => {
+      if (payload.type === 'CHAT_MESSAGE') {
+        useGameStore.setState((state) => ({
+          chatMessages: [...state.chatMessages, payload.data]
+        }))
+        soundEngine.playIpodClick()
+      }
+    })
+    return () => unsub()
+  }, [])
+
   const handleSend = (e?: React.FormEvent) => {
     e?.preventDefault()
     if (!inputText.trim()) return
@@ -36,6 +50,7 @@ export function QuietChatDrawer() {
       return
     }
 
+    database.broadcastChatMessage('Companion', inputText)
     soundEngine.playIpodClick()
     setInputText('')
   }

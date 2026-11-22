@@ -223,17 +223,41 @@ export function PauseMenu() {
             <div>
               <div className="flex justify-between mb-1">
                 <span>Look Sensitivity</span>
-                <span>{mouseSensitivity.toFixed(1)}x</span>
+                <span className="text-amber-300 font-bold">{mouseSensitivity.toFixed(1)}x</span>
               </div>
               <input
                 type="range"
-                min="0.4"
-                max="2.5"
+                min="0.2"
+                max="3.0"
                 step="0.1"
                 value={mouseSensitivity}
                 onChange={(e) => setMouseSensitivity(parseFloat(e.target.value))}
-                className="w-full accent-amber-500"
+                className="w-full accent-amber-500 mb-1.5"
               />
+              <div className="flex gap-1.5 justify-between">
+                {[
+                  { label: 'Gentle (0.6x)', val: 0.6 },
+                  { label: 'Normal (1.0x)', val: 1.0 },
+                  { label: 'Smooth (1.5x)', val: 1.5 },
+                  { label: 'Fast (2.2x)', val: 2.2 },
+                ].map(p => (
+                  <button
+                    key={p.val}
+                    type="button"
+                    onClick={() => {
+                      soundEngine.playIpodClick()
+                      setMouseSensitivity(p.val)
+                    }}
+                    className={`flex-1 py-1 text-[10px] rounded transition ${
+                      Math.abs(mouseSensitivity - p.val) < 0.05
+                        ? 'bg-amber-600 text-white font-bold'
+                        : 'bg-[#25150d] text-stone-300 hover:bg-[#382115]'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Invert Y */}

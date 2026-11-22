@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { X, BookOpen, Trash2, Plus, Sparkles, Heart } from 'lucide-react'
+import { X, BookOpen, Trash2, Plus, Sparkles, Heart, Download } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { useGameStore, DiaryEntry } from '../../store/gameStore'
 import { soundEngine } from '../../audio/soundEngine'
+import { database } from '../../services/database'
 
 const MOODS: Array<{ id: DiaryEntry['mood']; label: string; icon: string }> = [
   { id: 'peaceful', label: 'Peaceful', icon: '🕊️' },
@@ -137,6 +138,28 @@ export function DiaryModal() {
                   </div>
                 )
               })}
+            </div>
+
+            {/* Export Diary as Markdown Button */}
+            <div className="pt-2 border-t border-[#e0d3c3]">
+              <button
+                onClick={() => {
+                  const md = database.exportDiaryToMarkdown(diaryEntries)
+                  const blob = new Blob([md], { type: 'text/markdown' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = `lonercafe-diary-${new Date().toISOString().slice(0, 10)}.md`
+                  a.click()
+                  URL.revokeObjectURL(url)
+                  soundEngine.playPageFlip()
+                }}
+                className="w-full py-1.5 flex items-center justify-center gap-1.5 text-xs font-mono bg-[#ece0d1] hover:bg-[#ded1c0] text-[#3a2214] rounded-lg transition"
+                title="Download your journal memories as Markdown"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export Journal (.md)</span>
+              </button>
             </div>
           </div>
 
