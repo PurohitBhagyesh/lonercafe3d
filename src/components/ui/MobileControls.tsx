@@ -17,6 +17,7 @@ export function MobileControls() {
   const { 
     mode, 
     setMode, 
+    pauseGame,
     currentSittingSpot, 
     standUp, 
     sitDown, 
@@ -221,28 +222,18 @@ export function MobileControls() {
         </button>
       </div>
 
-      {/* 3. Top Right Utility Bar (Friends & Settings) */}
+      {/* 3. Top Right Pause / Sanctuary Menu Button */}
       <div className="pointer-events-auto absolute top-5 right-5 flex items-center gap-2">
         <button
           onClick={() => {
             soundEngine.playIpodClick()
-            setMode('friends')
+            pauseGame()
           }}
-          className="p-2.5 rounded-full bg-[#22160e]/85 hover:bg-[#382318] text-amber-200 border border-[#593d2b]/60 shadow-lg backdrop-blur-md transition"
-          title="Quiet Companionship / Friends"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-[#22160e]/90 hover:bg-[#382318] text-amber-200 border border-[#593d2b]/60 shadow-lg backdrop-blur-md transition active:scale-95"
+          title="Pause & Sanctuary Menu"
         >
-          <Users className="w-4 h-4" />
-        </button>
-
-        <button
-          onClick={() => {
-            soundEngine.playIpodClick()
-            setMode('settings')
-          }}
-          className="p-2.5 rounded-full bg-[#22160e]/85 hover:bg-[#382318] text-stone-200 border border-[#593d2b]/60 shadow-lg backdrop-blur-md transition"
-          title="Settings & Audio Mixer"
-        >
-          <Sliders className="w-4 h-4" />
+          <Sliders className="w-3.5 h-3.5 text-amber-400" />
+          <span className="text-[11px] font-mono">Menu [ESC]</span>
         </button>
       </div>
     </div>

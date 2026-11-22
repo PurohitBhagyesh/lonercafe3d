@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 
+export type GamePhase = 'menu' | 'playing' | 'paused'
 export type WeatherType = 'rain' | 'snow' | 'sunset' | 'night' | 'sakura'
 export type TimeOfDay = 'dawn' | 'noon' | 'sunset' | 'twilight' | 'midnight'
 
@@ -10,8 +11,6 @@ export type InteractionMode =
   | 'writing' 
   | 'brewing' 
   | 'ipod' 
-  | 'settings' 
-  | 'friends' 
   | 'chat'
 
 export interface DiaryEntry {
@@ -58,28 +57,60 @@ export interface ChatMessage {
 
 export type HeldItemType = 'coffee' | 'book' | 'watering-can'
 
+export interface KeyBindings {
+  forward: string
+  backward: string
+  left: string
+  right: string
+  interact: string
+  jump: string
+}
+
 interface GameState {
-  // Mode & Interactions
+  // Game lifecycle
+  gamePhase: GamePhase
+  setGamePhase: (phase: GamePhase) => void
+  startGame: () => void
+  pauseGame: () => void
+  resumeGame: () => void
+  quitToMenu: () => void
+
+  // World & Multiplayer (6-digit code & password)
+  worldCode: string
+  worldPassword: string
+  worldName: string
+  isWorldPrivate: boolean
+  setWorldConfig: (config: { name?: string; password?: string; isPrivate?: boolean }) => void
+  connectedFriend: { id: string; name: string; position: [number, number, number]; state: string; isTalking?: boolean } | null
+  setConnectedFriend: (friend: { id: string; name: string; position: [number, number, number]; state: string; isTalking?: boolean } | null) => void
+
+  // Gameplay Mode
   mode: InteractionMode
   setMode: (mode: InteractionMode) => void
   currentSittingSpot: SittingSpot | null
   sitDown: (spot: SittingSpot) => void
   standUp: () => void
 
-  // Camera Eye-View mode
-  isEyeView: boolean
-  toggleEyeView: () => void
+  // Camera & Accessibility Settings
+  reduceMotion: boolean
+  setReduceMotion: (val: boolean) => void
+  fov: number
+  setFov: (val: number) => void
+  mouseSensitivity: number
+  setMouseSensitivity: (val: number) => void
+  invertY: boolean
+  setInvertY: (val: boolean) => void
+  keyBindings: KeyBindings
+  setKeyBinding: (action: keyof KeyBindings, key: string) => void
 
-  // Prompt / Raycasting HUD
+  // HUD Prompts
   activePrompt: string | null
   promptAction: (() => void) | null
   setActivePrompt: (prompt: string | null, action?: (() => void) | null) => void
 
-  // Inventory / Held Item
+  // Inventory & Items
   heldItem: { id: string; name: string; type: HeldItemType; drinkType?: string } | null
   setHeldItem: (item: { id: string; name: string; type: HeldItemType; drinkType?: string } | null) => void
-
-  // Coffee on tables
   tableItems: Array<{ id: string; type: 'coffee'; position: [number, number, number]; name: string; drinkType?: string }>
   placeItemOnTable: (position: [number, number, number], name?: string, drinkType?: string) => void
 
@@ -87,13 +118,13 @@ interface GameState {
   plants: PlantState[]
   waterPlant: (plantId: string) => void
 
-  // Environment, Weather & Time of Day
+  // Environment & Atmosphere
   weather: WeatherType
   setWeather: (weather: WeatherType) => void
   timeOfDay: TimeOfDay
   setTimeOfDay: (time: TimeOfDay) => void
 
-  // Audio / Soundboard & Radio
+  // Sound Engine
   masterVolume: number
   ambientVolume: number
   musicVolume: number
@@ -109,7 +140,7 @@ interface GameState {
   addDiaryEntry: (entry: Omit<DiaryEntry, 'id' | 'date' | 'time'>) => void
   deleteDiaryEntry: (id: string) => void
 
-  // iPod Player
+  // iPod
   ipodSkin: string
   setIpodSkin: (skin: string) => void
   playlist: SongTrack[]
@@ -119,28 +150,23 @@ interface GameState {
   setTrackIndex: (idx: number) => void
   addCustomTrack: (track: { title: string; artist: string; url: string }) => void
 
-  // Settings
-  mouseSensitivity: number
-  setMouseSensitivity: (val: number) => void
-  isMobileControls: boolean
-  setIsMobileControls: (val: boolean) => void
-
-  // Friend / Multiplayer Presence & Chat
-  friendCode: string
-  connectedFriend: { id: string; name: string; position: [number, number, number]; state: string; isTalking?: boolean } | null
-  setConnectedFriend: (friend: { id: string; name: string; position: [number, number, number]; state: string; isTalking?: boolean } | null) => void
+  // Chat & Voice
   chatMessages: ChatMessage[]
   lastMessageSentTime: number
   sendChatMessage: (text: string) => boolean
   isMicActive: boolean
   toggleMic: () => void
+
+  // Mobile
+  isMobileControls: boolean
+  setIsMobileControls: (val: boolean) => void
 }
 
 const DEFAULT_PLAYLIST: SongTrack[] = [
-  { id: '1', title: 'Midnight Raindrops', artist: 'Loners Sanctuary', isProcedural: true, synthGenre: 'lofi' },
-  { id: '2', title: 'Warm Coffee & Empty Booths', artist: 'Solitude Sounds', isProcedural: true, synthGenre: 'jazz' },
-  { id: '3', title: 'Winter Window Pane', artist: 'Hygge Ensemble', isProcedural: true, synthGenre: 'piano' },
-  { id: '4', title: 'Starry Silence for One', artist: 'Quiet Mind', isProcedural: true, synthGenre: 'ambient' },
+  { id: '1', title: 'Rain on Copper Roof', artist: 'Loner Sanctuary', isProcedural: true, synthGenre: 'lofi' },
+  { id: '2', title: 'Empty Booths & Warm Steam', artist: 'Solitude Collective', isProcedural: true, synthGenre: 'jazz' },
+  { id: '3', title: 'Frost on Window Panes', artist: 'Hygge Studies', isProcedural: true, synthGenre: 'piano' },
+  { id: '4', title: 'Silent Hours for Quiet Souls', artist: 'Nocturne Studio', isProcedural: true, synthGenre: 'ambient' },
 ]
 
 const INITIAL_ENTRIES: DiaryEntry[] = [
@@ -161,23 +187,88 @@ const INITIAL_PLANTS: PlantState[] = [
   { id: 'plant-bar', name: 'Hanging Pothos (Bar Counter)', position: [4.2, 1.15, -2.4], hydrated: true },
 ]
 
+// Generate 6-digit numeric world code
+function generateWorldCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
 export const useGameStore = create<GameState>((set, get) => ({
+  // Game lifecycle
+  gamePhase: 'menu',
+  setGamePhase: (phase) => set({ gamePhase: phase }),
+  startGame: () => set({ gamePhase: 'playing', mode: 'walking' }),
+  pauseGame: () => {
+    if (get().gamePhase === 'playing') {
+      set({ gamePhase: 'paused' })
+    }
+  },
+  resumeGame: () => {
+    if (get().gamePhase === 'paused') {
+      set({ gamePhase: 'playing' })
+    }
+  },
+  quitToMenu: () => {
+    set({ gamePhase: 'menu', mode: 'walking', currentSittingSpot: null, activePrompt: null })
+  },
+
+  // World Config (6-digit room code)
+  worldCode: generateWorldCode(),
+  worldPassword: '',
+  worldName: 'Solitary Haven',
+  isWorldPrivate: false,
+  setWorldConfig: (config) => set((state) => ({
+    worldName: config.name ?? state.worldName,
+    worldPassword: config.password ?? state.worldPassword,
+    isWorldPrivate: config.isPrivate ?? state.isWorldPrivate
+  })),
+  connectedFriend: null,
+  setConnectedFriend: (friend) => set({ connectedFriend: friend }),
+
+  // Mode
   mode: 'walking',
   setMode: (mode) => set({ mode }),
   currentSittingSpot: null,
   sitDown: (spot) => set({ mode: 'sitting', currentSittingSpot: spot, activePrompt: null }),
   standUp: () => set({ mode: 'walking', currentSittingSpot: null, activePrompt: null }),
 
-  isEyeView: true,
-  toggleEyeView: () => set((state) => ({ isEyeView: !state.isEyeView })),
+  // Accessibility & Controls
+  reduceMotion: localStorage.getItem('loners_reduce_motion') === 'true',
+  setReduceMotion: (val) => {
+    localStorage.setItem('loners_reduce_motion', String(val))
+    set({ reduceMotion: val })
+  },
+  fov: 72,
+  setFov: (val) => set({ fov: val }),
+  mouseSensitivity: parseFloat(localStorage.getItem('loners_sensitivity') || '1.0'),
+  setMouseSensitivity: (val) => {
+    localStorage.setItem('loners_sensitivity', String(val))
+    set({ mouseSensitivity: val })
+  },
+  invertY: localStorage.getItem('loners_invert_y') === 'true',
+  setInvertY: (val) => {
+    localStorage.setItem('loners_invert_y', String(val))
+    set({ invertY: val })
+  },
+  keyBindings: {
+    forward: 'KeyW',
+    backward: 'KeyS',
+    left: 'KeyA',
+    right: 'KeyD',
+    interact: 'KeyE',
+    jump: 'Space'
+  },
+  setKeyBinding: (action, key) => set((state) => ({
+    keyBindings: { ...state.keyBindings, [action]: key }
+  })),
 
+  // HUD
   activePrompt: null,
   promptAction: null,
   setActivePrompt: (prompt, action = null) => set({ activePrompt: prompt, promptAction: action }),
 
+  // Items
   heldItem: null,
   setHeldItem: (item) => set({ heldItem: item }),
-
   tableItems: [
     { id: 'initial-coffee', type: 'coffee', position: [-2.2, 0.78, 1.2], name: 'Hot Cinnamon Latte', drinkType: 'latte' }
   ],
@@ -190,7 +281,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }))
   },
 
-  // Plants & Watering
+  // Plants
   plants: INITIAL_PLANTS,
   waterPlant: (plantId) => {
     set((state) => ({
@@ -200,7 +291,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }))
   },
 
-  // Weather & Time of Day
+  // Atmosphere
   weather: (localStorage.getItem('loners_weather') as WeatherType) || 'rain',
   setWeather: (weather) => {
     localStorage.setItem('loners_weather', weather)
@@ -212,7 +303,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ timeOfDay })
   },
 
-  // Audio Volumes
+  // Volumes
   masterVolume: 0.8,
   ambientVolume: 0.7,
   musicVolume: 0.6,
@@ -269,7 +360,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newTrack: SongTrack = {
       id: `custom-${Date.now()}`,
       title: track.title,
-      artist: track.artist || 'My Upload',
+      artist: track.artist || 'My Audio',
       url: track.url,
       isProcedural: false
     }
@@ -280,21 +371,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     }))
   },
 
-  // Settings
-  mouseSensitivity: 1.0,
-  setMouseSensitivity: (val) => set({ mouseSensitivity: val }),
-  isMobileControls: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
-  setIsMobileControls: (val) => set({ isMobileControls: val }),
-
-  // Friends & Chat
-  friendCode: Math.random().toString(36).substring(2, 6).toUpperCase(),
-  connectedFriend: null,
-  setConnectedFriend: (friend) => set({ connectedFriend: friend }),
+  // Chat
   chatMessages: [
     {
       id: 'welcome-chat',
       sender: 'Café Keeper',
-      text: 'Welcome to Loners Café. Speak softly or sit in peaceful silence. You are safe here.',
+      text: 'Welcome to Loners Café. Speak softly or sit in peaceful silence.',
       time: 'Just now',
       isSelf: false
     }
@@ -303,10 +385,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   sendChatMessage: (text) => {
     const now = Date.now()
     const { lastMessageSentTime } = get()
-    // Rate limit: 1 message every 1.5 seconds to keep chat peaceful
-    if (now - lastMessageSentTime < 1500) {
-      return false
-    }
+    if (now - lastMessageSentTime < 1500) return false
 
     const newMsg: ChatMessage = {
       id: `msg-${now}`,
@@ -321,15 +400,14 @@ export const useGameStore = create<GameState>((set, get) => ({
       lastMessageSentTime: now
     }))
 
-    // Echo simulated gentle reply if connected to quiet stranger
     const { connectedFriend } = get()
     if (connectedFriend) {
       setTimeout(() => {
         const friendReplies = [
           "The rain sounds lovely today ☕",
-          "Takes a sip of coffee...",
-          "Nods gently in quiet solidarity.",
-          "Hope you're having a restful evening ✨",
+          "Takes a sip of warm coffee...",
+          "Nods in quiet solidarity.",
+          "Hope you're having a gentle evening ✨",
           "Such a peaceful corner."
         ]
         const randomReply = friendReplies[Math.floor(Math.random() * friendReplies.length)]
@@ -351,5 +429,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     return true
   },
   isMicActive: false,
-  toggleMic: () => set((state) => ({ isMicActive: !state.isMicActive }))
+  toggleMic: () => set((state) => ({ isMicActive: !state.isMicActive })),
+
+  // Mobile
+  isMobileControls: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+  setIsMobileControls: (val) => set({ isMobileControls: val })
 }))

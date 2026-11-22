@@ -15,27 +15,33 @@ export const touchState = {
 export function PlayerController() {
   const { camera } = useThree()
   const { 
+    gamePhase,
+    pauseGame,
+    resumeGame,
     mode, 
     currentSittingSpot, 
     standUp, 
     sitDown, 
     setActivePrompt, 
     mouseSensitivity,
+    invertY,
+    reduceMotion,
+    keyBindings,
     heldItem,
     setHeldItem,
     placeItemOnTable,
-    tableItems,
     setMode
   } = useGameStore()
 
   // Player position and velocity
-  const pos = useRef(new THREE.Vector3(0, 1.5, 0))
+  const pos = useRef(new THREE.Vector3(0, 1.45, 0))
   const vel = useRef(new THREE.Vector3())
   const euler = useRef(new THREE.Euler(0, 0, 0, 'YXZ'))
   const keys = useRef<{ [key: string]: boolean }>({})
   const isPointerLocked = useRef(false)
   const footstepTimer = useRef(0)
   const headBobTimer = useRef(0)
+  const menuCameraAngle = useRef(0)
 
   // Pre-defined hotspots
   const hotspots: Array<{
@@ -47,7 +53,7 @@ export function PlayerController() {
   }> = [
     {
       name: 'window-seat',
-      prompt: 'Press [E] or Tap to Sit by the Window',
+      prompt: 'Press [E] to Sit by the Window',
       pos: [-1.8, 0.65, -4.2],
       radius: 1.5,
       onAction: () => {
@@ -63,7 +69,7 @@ export function PlayerController() {
     },
     {
       name: 'armchair',
-      prompt: 'Press [E] or Tap to Sit in Reading Armchair',
+      prompt: 'Press [E] to Sit in Reading Armchair',
       pos: [-3.5, 0.5, 2.8],
       radius: 1.6,
       onAction: () => {
@@ -79,7 +85,7 @@ export function PlayerController() {
     },
     {
       name: 'diary',
-      prompt: 'Press [E] or Tap to Open Loner\'s Diary',
+      prompt: 'Press [E] to Open Private Diary',
       pos: [-1.2, 0.8, 2.5],
       radius: 1.4,
       onAction: () => {
@@ -96,7 +102,7 @@ export function PlayerController() {
     },
     {
       name: 'bookshelf',
-      prompt: 'Press [E] or Tap to Browse Library',
+      prompt: 'Press [E] to Read Books',
       pos: [-4.6, 1.5, -0.8],
       radius: 1.8,
       onAction: () => {
@@ -106,7 +112,7 @@ export function PlayerController() {
     },
     {
       name: 'coffeebar',
-      prompt: 'Press [E] or Tap to Brew Coffee',
+      prompt: 'Press [E] to Brew Artisan Coffee',
       pos: [3.3, 1.2, -0.8],
       radius: 1.7,
       onAction: () => {
@@ -115,7 +121,7 @@ export function PlayerController() {
     },
     {
       name: 'ipod',
-      prompt: 'Press [E] or Tap to Open iPod Music',
+      prompt: 'Press [E] to Open iPod Music',
       pos: [-1.4, 0.95, -4.6],
       radius: 1.5,
       onAction: () => {
@@ -125,7 +131,7 @@ export function PlayerController() {
     },
     {
       name: 'watering-can',
-      prompt: 'Press [E] or Tap to Pick up Watering Can',
+      prompt: 'Press [E] to Pick up Watering Can',
       pos: [-4.9, 0.5, 0.5],
       radius: 1.4,
       onAction: () => {
@@ -144,9 +150,37 @@ export function PlayerController() {
     const onKeyDown = (e: KeyboardEvent) => {
       keys.current[e.code] = true
 
-      // E key interactions
-      if (e.code === 'KeyE') {
-        const currentPrompt = useGameStore.getState().activePrompt
+      // ESCAPE Key: pause / resume or exit submode
+      if (e.code === 'Escape') {
+        const { gamePhase, mode } = useGameStore.getState()
+        if (gamePhase === 'playing') {
+          if (mode !== 'walking') {
+            // Exit sitting, diary, or reading mode first
+            soundEngine.playSitSound()
+            standUp()
+            setMode('walking')
+          } else {
+            // Pause game
+            soundEngine.playIpodClick()
+            pauseGame()
+            if (document.pointerLockElement) {
+              document.exitPointerLock?.()
+            }
+          }
+          return
+        } else if (gamePhase === 'paused') {
+          soundEngine.playSitSound()
+          resumeGame()
+          if (!/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            document.querySelector('canvas')?.requestPointerLock?.()
+          }
+          return
+        }
+      }
+
+      // Interact Key (Default 'KeyE')
+      const currentInteractKey = useGameStore.getState().keyBindings.interact
+      if (e.code === currentInteractKey) {
         const action = useGameStore.getState().promptAction
         if (action) {
           action()
@@ -161,8 +195,8 @@ export function PlayerController() {
         }
       }
 
-      // Space or Escape to stand up or close modal
-      if ((e.code === 'Space' || e.code === 'Escape') && mode === 'sitting') {
+      // Space to stand up when sitting
+      if (e.code === 'Space' && mode === 'sitting') {
         soundEngine.playSitSound()
         standUp()
       }
@@ -173,10 +207,11 @@ export function PlayerController() {
     }
 
     const onMouseMove = (e: MouseEvent) => {
-      if (!isPointerLocked.current || mode !== 'walking') return
+      const { gamePhase, mode } = useGameStore.getState()
+      if (gamePhase !== 'playing' || !isPointerLocked.current || mode !== 'walking') return
       const sens = 0.002 * mouseSensitivity
       euler.current.y -= e.movementX * sens
-      euler.current.x -= e.movementY * sens
+      euler.current.x += (invertY ? e.movementY : -e.movementY) * sens
       // Clamp vertical look between -80 and +80 degrees
       euler.current.x = Math.max(-Math.PI * 0.44, Math.min(Math.PI * 0.44, euler.current.x))
     }
@@ -196,10 +231,23 @@ export function PlayerController() {
       window.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('pointerlockchange', onPointerLockChange)
     }
-  }, [mode, mouseSensitivity, sitDown, standUp, setMode])
+  }, [mode, mouseSensitivity, invertY, sitDown, standUp, setMode, pauseGame, resumeGame])
 
   // Camera frame loop
   useFrame((state, delta) => {
+    // 0. If In Title Menu: Cinematic slow camera pan
+    if (gamePhase === 'menu') {
+      menuCameraAngle.current += delta * 0.08
+      camera.position.x = Math.sin(menuCameraAngle.current) * 2.5
+      camera.position.z = Math.cos(menuCameraAngle.current) * 1.5 - 1.5
+      camera.position.y = 1.7
+      camera.lookAt(0, 1.2, -5)
+      return
+    }
+
+    // If Paused: Do not move camera
+    if (gamePhase === 'paused') return
+
     // 1. If Sitting: Smoothly interpolate camera to sitting viewpoint
     if (mode === 'sitting' && currentSittingSpot) {
       const targetPos = new THREE.Vector3(...currentSittingSpot.cameraPosition)
@@ -227,7 +275,7 @@ export function PlayerController() {
     if (touchState.lookDeltaX !== 0 || touchState.lookDeltaY !== 0) {
       const sens = 0.003 * mouseSensitivity
       euler.current.y -= touchState.lookDeltaX * sens
-      euler.current.x -= touchState.lookDeltaY * sens
+      euler.current.x += (invertY ? touchState.lookDeltaY : -touchState.lookDeltaY) * sens
       euler.current.x = Math.max(-Math.PI * 0.44, Math.min(Math.PI * 0.44, euler.current.x))
       touchState.lookDeltaX = 0
       touchState.lookDeltaY = 0
@@ -235,12 +283,12 @@ export function PlayerController() {
 
     camera.quaternion.setFromEuler(euler.current)
 
-    // 4. Calculate movement direction from keyboard + mobile virtual joystick
+    // 4. Calculate movement direction from rebindable keyboard + mobile virtual joystick
     const moveDir = new THREE.Vector3()
-    if (keys.current['KeyW'] || keys.current['ArrowUp'] || touchState.moveY < -0.1) moveDir.z -= 1
-    if (keys.current['KeyS'] || keys.current['ArrowDown'] || touchState.moveY > 0.1) moveDir.z += 1
-    if (keys.current['KeyA'] || keys.current['ArrowLeft'] || touchState.moveX < -0.1) moveDir.x -= 1
-    if (keys.current['KeyD'] || keys.current['ArrowRight'] || touchState.moveX > 0.1) moveDir.x += 1
+    if (keys.current[keyBindings.forward] || keys.current['ArrowUp'] || touchState.moveY < -0.1) moveDir.z -= 1
+    if (keys.current[keyBindings.backward] || keys.current['ArrowDown'] || touchState.moveY > 0.1) moveDir.z += 1
+    if (keys.current[keyBindings.left] || keys.current['ArrowLeft'] || touchState.moveX < -0.1) moveDir.x -= 1
+    if (keys.current[keyBindings.right] || keys.current['ArrowRight'] || touchState.moveX > 0.1) moveDir.x += 1
 
     if (moveDir.lengthSq() > 0) {
       moveDir.normalize()
@@ -251,9 +299,13 @@ export function PlayerController() {
       vel.current.x = moveDir.x * speed
       vel.current.z = moveDir.z * speed
 
-      // Head-bobbing
-      headBobTimer.current += delta * 10
-      camera.position.y = 1.45 + Math.sin(headBobTimer.current) * 0.04
+      // Head-bobbing (disabled if reduceMotion is on)
+      if (!reduceMotion) {
+        headBobTimer.current += delta * 10
+        camera.position.y = 1.45 + Math.sin(headBobTimer.current) * 0.035
+      } else {
+        camera.position.y = 1.45
+      }
 
       // Footstep audio
       footstepTimer.current += delta
@@ -271,7 +323,7 @@ export function PlayerController() {
     pos.current.x += vel.current.x * delta
     pos.current.z += vel.current.z * delta
 
-    // Room collision boundaries (prevent walking through walls)
+    // Room collision boundaries
     pos.current.x = Math.max(-4.4, Math.min(4.4, pos.current.x))
     pos.current.z = Math.max(-4.2, Math.min(3.8, pos.current.z))
 
