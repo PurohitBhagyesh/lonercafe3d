@@ -71,9 +71,22 @@ class NetworkSyncService {
         }
       })
 
-      // When another peer connects to this peer
+      // When another peer connects to this peer for data
       this.peer.on('connection', (conn) => {
         this.setupConnection(conn)
+      })
+
+      // When another peer calls with microphone voice stream
+      this.peer.on('call', (mediaConn) => {
+        const localStream = (window as any).__loners_local_stream
+        mediaConn.answer(localStream || undefined)
+        mediaConn.on('stream', (remoteStream) => {
+          const audioEl = document.querySelector('#peer-voice-audio') as HTMLAudioElement
+          if (audioEl) {
+            audioEl.srcObject = remoteStream
+            audioEl.play().catch(() => {})
+          }
+        })
       })
 
       this.peer.on('error', (err) => {
@@ -287,6 +300,21 @@ class NetworkSyncService {
       senderId: this.localPlayerId,
       senderName: this.playerName,
       data: { weather, timeOfDay }
+    })
+  }
+
+  public streamAudioToPeers(stream: MediaStream) {
+    if (!this.peer) return
+    (window as any).__loners_local_stream = stream
+    this.connections.forEach((conn) => {
+      const call = this.peer?.call(conn.peer, stream)
+      call?.on('stream', (remoteStream) => {
+        const audioEl = document.querySelector('#peer-voice-audio') as HTMLAudioElement
+        if (audioEl) {
+          audioEl.srcObject = remoteStream
+          audioEl.play().catch(() => {})
+        }
+      })
     })
   }
 

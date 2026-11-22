@@ -5,14 +5,15 @@ import { soundEngine } from '../../audio/soundEngine'
 import { database } from '../../services/database'
 import { networkSync } from '../../services/networkSync'
 import { aiCompanion } from '../../services/aiCompanion'
+import { voiceService } from '../../services/voiceService'
 
 export function QuietChatDrawer() {
   const { 
     chatMessages, 
     sendChatMessage, 
     isMicActive, 
-    toggleMic, 
     connectedFriend,
+    coopStatus,
     mode,
     setMode 
   } = useGameStore()
@@ -79,9 +80,14 @@ export function QuietChatDrawer() {
     }
   }
 
+  // STRICT RULE: ONLY show chat & mic if user is in Co-Op or has a companion!
+  if (!connectedFriend && coopStatus !== 'connected') {
+    return null
+  }
+
   return (
     <>
-      {/* Floating Chat & Mic Pill (Bottom Left, safely above virtual joystick on mobile screens) */}
+      {/* Floating Chat & Real Voice Mic Pill (Bottom Left, safely above virtual joystick on mobile screens) */}
       <div className="fixed bottom-6 max-sm:bottom-36 left-6 z-30 flex items-center gap-2 select-none">
         {/* Toggle Chat button */}
         <button
@@ -93,27 +99,38 @@ export function QuietChatDrawer() {
         >
           <MessageSquare className="w-4 h-4 text-amber-300" />
           <span className="text-xs font-mono hidden sm:inline">
-            {connectedFriend ? `Chat (${connectedFriend.name.slice(0, 10)})` : 'Quiet Thoughts'}
+            {connectedFriend ? `Chat (${connectedFriend.name.slice(0, 10)})` : 'Co-Op Chat'}
           </span>
           {chatMessages.length > 0 && (
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
           )}
         </button>
 
-        {/* Mic / Sound presence toggle */}
+        {/* Real Microphone Voice Talk On/Off Toggle */}
         <button
-          onClick={() => {
+          onClick={async () => {
             soundEngine.playIpodClick()
-            toggleMic()
+            await voiceService.toggleMic()
           }}
-          className={`p-2 rounded-full border shadow-xl backdrop-blur-md transition active:scale-95 ${
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-full border shadow-xl backdrop-blur-md transition active:scale-95 text-xs font-mono font-bold ${
             isMicActive
-              ? 'bg-emerald-800/90 text-white border-emerald-400'
-              : 'bg-[#251710]/90 text-stone-400 border-amber-400/30 hover:text-stone-200'
+              ? 'bg-emerald-600/95 text-white border-emerald-300 shadow-emerald-900/50'
+              : 'bg-[#251710]/90 text-stone-300 border-[#4a2e1c] hover:bg-[#382318]'
           }`}
-          title={isMicActive ? 'Microphone Active (Voice presence on)' : 'Microphone Muted'}
+          title={isMicActive ? 'Microphone Active • Click to Turn Off' : 'Microphone Muted • Click to Speak'}
         >
-          {isMicActive ? <Mic className="w-4 h-4 text-emerald-200 animate-pulse" /> : <MicOff className="w-4 h-4" />}
+          {isMicActive ? (
+            <>
+              <Mic className="w-4 h-4 text-white animate-pulse" />
+              <span>Mic ON</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+            </>
+          ) : (
+            <>
+              <MicOff className="w-4 h-4 text-stone-400" />
+              <span>Mic OFF</span>
+            </>
+          )}
         </button>
       </div>
 

@@ -1,8 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { 
   Armchair, 
-  BookOpen, 
-  Music, 
   Move
 } from 'lucide-react'
 import { useGameStore } from '../../store/gameStore'
@@ -12,40 +10,51 @@ import { soundEngine } from '../../audio/soundEngine'
 export function MobileControls() {
   const { 
     mode, 
-    setMode, 
-    currentSittingSpot, 
     standUp, 
-    sitDown, 
     promptAction
   } = useGameStore()
 
   const [isTouchDevice, setIsTouchDevice] = useState(false)
 
-  // Only activate virtual joystick on genuine mobile touchscreens (phones & tablets)
+  // Only activate virtual joystick on genuine handheld mobile touchscreens (phones & tablets)
   useEffect(() => {
     const checkTouch = () => {
-      // 1. Never show on desktop platforms (macOS, Windows, Linux)
-      const isDesktop = typeof navigator !== 'undefined' && 
+      // 1. NEVER show on desktop platforms (macOS, Windows, Linux, Safari Desktop, Chrome Desktop)
+      const isDesktopUA = typeof navigator !== 'undefined' && 
         /Macintosh|Windows|Linux/i.test(navigator.userAgent) && 
         !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 
-      if (isDesktop) {
+      const hasFinePointer = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
+      const isLargeScreen = typeof window !== 'undefined' && window.innerWidth >= 1024
+
+      if (isDesktopUA || (hasFinePointer && isLargeScreen)) {
         setIsTouchDevice(false)
         return
       }
 
       const hasTouch = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
       const isCoarsePointer = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
-      const isMobileUA = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-      const isSmallScreen = typeof window !== 'undefined' && window.innerWidth <= 1024
+      const isMobileUA = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|webOS|BlackBerry/i.test(navigator.userAgent)
 
-      // STRICT CHECK: Must be a mobile OS with touch capability
-      setIsTouchDevice(hasTouch && (isCoarsePointer || isMobileUA) && isSmallScreen)
+      // Strict check: Must be a mobile UA and coarse pointer on a small screen
+      setIsTouchDevice(Boolean(hasTouch && (isCoarsePointer || isMobileUA) && !hasFinePointer))
+    }
+
+    // Dismiss instantly if any keyboard or mouse event occurs on desktop
+    const onDesktopActivity = () => {
+      setIsTouchDevice(false)
     }
 
     checkTouch()
     window.addEventListener('resize', checkTouch)
-    return () => window.removeEventListener('resize', checkTouch)
+    window.addEventListener('keydown', onDesktopActivity, { once: true })
+    window.addEventListener('mousemove', onDesktopActivity, { once: true })
+
+    return () => {
+      window.removeEventListener('resize', checkTouch)
+      window.removeEventListener('keydown', onDesktopActivity)
+      window.removeEventListener('mousemove', onDesktopActivity)
+    }
   }, [])
 
   // Joystick touch tracking
@@ -161,7 +170,7 @@ export function MobileControls() {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-30 select-none">
-      {/* Virtual Joystick (Mobile Only) */}
+      {/* Virtual Joystick (Handheld Mobile Only) */}
       {mode === 'walking' && (
         <div
           ref={joystickBaseRef}

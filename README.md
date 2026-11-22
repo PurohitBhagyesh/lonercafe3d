@@ -15,9 +15,11 @@
 
 ## 🌟 Key Features
 
-### 1. 👥 Full Co-Op Multiplayer Sanctuary (WebRTC P2P + Broadcast Mesh)
+### 1. 👥 Full Co-Op Multiplayer Sanctuary & Real WebRTC Voice Talk
+- **Real-Time Voice Microphone Talk:** Real microphone audio capture streamed directly peer-to-peer via WebRTC with live voice activity detection and audio level indicators.
+- **1-Click Sound & Mic Mechanisms:** Instant on/off switches for master audio sound (`[V]`) and microphone.
+- **Context-Aware Clutter Elimination:** In solo mode, multiplayer chat drawers and microphone controls are completely hidden for pure solitary immersion. They only reveal themselves when playing with a friend or companion.
 - **Instant Room Connection:** Create or join a sanctuary using a simple **6-digit numeric PIN**, direct shareable URL (`?room=123456`), or a scannable **mobile QR code**.
-- **Zero-Config P2P Networking:** Powered by **PeerJS WebRTC DataChannels** for internet co-op and a local **BroadcastChannel mesh** for zero-latency multi-tab sync.
 - **Smooth Real-Time Synchronization:**
   - Silky interpolation (lerp) for avatar position, rotation, and walking momentum.
   - Synced player postures: walking, sitting by the window, sitting in the reading armchair, or playing at the piano stool.
@@ -25,11 +27,20 @@
   - **Shared World Events:** When either player waters a houseplant or changes the weather, both see and hear the effect simultaneously.
   - **Shared Acoustic Piano:** When either player presses piano keys, the notes ring out acoustically on both machines in real time!
 - **3D Floating Speech Bubbles & Whisper Chat:** Messages typed into the quiet chat drawer appear as 3D speech bubbles floating above your avatar’s head in the cafe.
-- **Voice Presence Halo:** An ethereal animated sound-wave halo pulses above avatars when voice mic presence is active.
 
 ---
 
-### 2. 🤖 AI Sanctuary Companion (Maya)
+### 2. 🌿 Unslopped Zen Minimalist HUD & Directional Zone Culling
+- **Zero-Clutter Cinematic View:** No rows of 15+ weather/time buttons plastered across your screen. The in-game HUD is stripped down to an artisanal watermark, 1-click audio toggle, contextual stand-up action, and `Menu [ESC]`.
+- **Atmosphere & Sky Sanctuary Menu (`[ESC]`):** Weather presets, time-of-day sunlight, background ambient soundscapes, and audio sliders are hosted inside the pause menu for calm, thoughtful configuration.
+- **Strict Directional Occlusion Culling:**
+  - *"Render only when the user sees that side; hide the other."*
+  - Camera forward-direction calculations cull opposing quadrants (North window/weather vs. South fireplace/piano/desk/cat, and East espresso bar vs. West library), drastically cutting draw calls, vertex transformations, and particle loads.
+- **Desktop & Safari Mouse Optimization:** Virtual touch joystick is strictly gated to handheld mobile touchscreens; desktop users on macOS, Safari, Chrome, and Windows experience clean, responsive keyboard (`WASD`) and pointer-lock navigation without mobile UI bleeding.
+
+---
+
+### 3. 🤖 AI Sanctuary Companion (Maya)
 - **Solo Doesn't Mean Lonely:** Toggle **Maya**, an intelligent autonomous resident companion and barista, whenever you want company in your solitary sanctuary.
 - **3D Autonomous Routine:**
   - Walks to the barista bar to grind beans and brew espresso with rising steam.
@@ -41,7 +52,7 @@
 
 ---
 
-### 3. 🎹 Interactive Upright Piano & Satie Sheet Music
+### 4. 🎹 Interactive Upright Piano & Satie Sheet Music
 - **Physical 3D Walnut Piano:** Modeled after an 1890s Érard upright piano with 21 ivory white keys, 15 ebony black keys, 3 brass pedals, and an upholstered velvet bench.
 - **Playable On-Screen Keyboard:** Walk up to the piano, press **`[E]`** to sit down, and play real notes using your computer keyboard (`A S D F G H J K` & `W E T Y U`) or mouse clicks.
 - **Synthesized Piano Acoustics:** Physically-modeled hammer strike transient and string soundboard resonance harmonics.
@@ -49,7 +60,7 @@
 
 ---
 
-### 4. 🕰️ Regulator Pendulum Clock & Artisanal 3D Decor
+### 5. 🕰️ Regulator Pendulum Clock & Artisanal 3D Decor
 - **1Hz Swinging Pendulum Clock:** Features a swinging brass pendulum with moving hour, minute, and second hands synchronized to your local real-world system clock.
 - **Peaceful Sleeping Café Cat:** A calico cat curled up on a hand-knitted oatmeal cushion beside the warm hearth, breathing with gentle rhythmic motion.
 - **Vintage Hand-Crank Coffee Grinder:** Detailed walnut dovetailed box, slide-out drawer, spun brass bean hopper, and cast-iron crank handle.
@@ -61,7 +72,7 @@
 
 ---
 
-### 5. 🌧️ Dynamic Weather & Horizon Engine
+### 6. 🌧️ Dynamic Weather & Horizon Engine
 Switch seamlessly between 5 atmospheric weather states and 5 times of day:
 - **Weather Types:**
   - 🌧️ **Rain & Storm:** Tapping raindrops against glass, rumble of soft thunder, and interactive condensation that you can wipe with your mouse or finger!
@@ -73,104 +84,87 @@ Switch seamlessly between 5 atmospheric weather states and 5 times of day:
 
 ---
 
-### 6. 📻 Retro iPod Classic & Ambient Soundscape
+### 7. 📻 Retro iPod Classic & Ambient Soundscape
 - **Diegetic iPod Classic:** Authentic click-wheel controls, animated equalizer spectrum bars, progress scrubber, and 5 skins (*Classic White*, *Stealth Black*, *Bondi Blue*, *Sakura Pink*, *Vintage Amber*).
 - **Custom MP3 File Upload:** Drop your own `.mp3` or `.wav` files into the iPod for private, zero-server offline playback.
 - **7 Selectable Ambient Soundscapes:** Rain & thunder, cozy café steam, crackling hearth fireplace, sakura wind chimes, blizzard wind, midnight crickets, or auto-match weather.
 
 ---
 
-### 7. 📖 The Loner’s Private Diary & Bookshelf
-- **Leather-Bound Desk Journal:** Sit at the loner’s writing desk under the vintage green banker’s lamp to record your thoughts.
-- **Markdown Export:** Export your complete journal history to clean `.md` format at any time.
-- **The Library Bookshelf:** Read excerpts from Marcus Aurelius (*Meditations*), Bashō (*Rainy Night Verses*), and Kakuzo Okakura (*The Book of Solitude & Tea*).
+### 8. ☕ Barista Craft: Coffee Brewing & Steaming Mugs
+- **Physical Pour-Over & Espresso Workflow:**
+  1. Grind fresh whole beans at the commercial grinder.
+  2. Pull a double espresso shot at the mirror-chrome machine with pressurized extraction audio.
+  3. Steam milk to microfoam with high-pressure steam hissing sound effects.
+- **Carry & Drink Mugs:** Take your hot mug anywhere in the café. Hold it in your hands, place it on the counter or writing desk, and sip hot coffee with gentle steam swirls.
 
 ---
 
-### 8. ☕ Artisan Coffee Bar & Plant Care
-- **Espresso Machine:** Dual-boiler machine with pressure gauges, steam wands, portafilters, and rising steam.
-- **6 Brew Selections:** Honey Lavender Oat Latte, Ceremonial Matcha Latte, Salted Caramel Macchiato, French Press Dark Roast, Vanilla Sweet Cream Cold Brew, and Midnight Hot Cinnamon Cocoa.
-- **Houseplant Hydration:** Pick up the vintage copper watering can and water the *Monstera Deliciosa*, *Fiddle Leaf Fig*, *Desk Bonsai*, and *Hanging Pothos*.
+### 9. 🪴 Houseplant Care & Copper Watering Can
+- **Living Flora:** Fiddle-leaf fig, snake plant (*Sansevieria*), hanging English ivy, and giant split-leaf *Monstera Deliciosa*.
+- **Moisture Depletion & Growth:** Plant soil dries out over time; pick up the vintage copper watering can to pour fresh water with splashing audio and particle droplets, keeping the foliage lush and vibrant.
 
 ---
 
-## 🎮 Controls Reference
+### 10. 📖 Private Leatherbound Journal
+- **Reflective Diary:** Write private entries with markdown formatting, mood tags (*Melancholy*, *Peaceful*, *Nostalgic*, *Inspired*), and time stamps.
+- **Local IndexedDB Persistence:** All your thoughts stay securely in your own browser storage.
+- **Markdown Export:** Export your entire journal collection as `.md` files at any time.
 
-| Action | Desktop Keyboard & Mouse / Trackpad | Mobile Touchscreen |
+---
+
+## 🎮 Controls
+
+| Action | Keyboard / Mouse | Mobile Touchscreen |
 | :--- | :--- | :--- |
-| **Walk Forward / Back** | `W` / `S` or `↑` / `↓` | Left Virtual Joystick |
-| **Strafe Left / Right** | `A` / `D` or `←` / `→` | Left Virtual Joystick |
-| **Look Around** | **Click & Drag** or **Two-Finger Trackpad Swipe** | Swipe on right half of screen |
-| **Lock / Unlock Mouse (FPS)**| `[L]` (or click "Lock Mouse" in Top Bar) | N/A |
-| **Interact / Pick Up / Sit** | `[E]` key (when prompt appears) | Contextual `[Interact]` button |
-| **Stand Up from Seat** | `[Space]` or `[E]` | `[Stand Up]` button |
-| **Open Private Diary** | `[J]` key (Journal) or click desk diary | Contextual prompt |
-| **Open Retro iPod** | `[M]` key (Music) or click iPod on counter | iPod button in Top Bar |
-| **Toggle Mute Sound** | `[V]` key | Top Bar Sound Toggle |
-| **Wipe Steamy Window** | Click "Wipe Window" in Top Bar when raining | Direct touch draw |
-| **Pause & Settings** | `[ESC]` key | Menu `[ESC]` in Top Bar |
-
-> [!TIP]
-> **Trackpad Friendly:** Desktop Safari and Mac trackpad users can freely pan with two fingers or click-and-drag without being trapped by browser pointer lock warnings!
+| **Move** | `W`, `A`, `S`, `D` or Arrow Keys | Left Virtual Joystick (Handheld only) |
+| **Look Around** | Mouse Drag / Pointer Lock | Right Touch Area Drag |
+| **Interact / Sit** | `E` Key / Click Item Prompt | Contextual Interaction Pill |
+| **Stand Up** | `Space` Key | "Stand Up" Button |
+| **Toggle Audio** | `V` Key / Top Bar Audio Pill | Top Bar Audio Pill |
+| **iPod Player** | `M` Key | Top Bar / In-Game iPod |
+| **Open Diary** | `J` Key / Desk Notebook | Desk Notebook Prompt |
+| **Take Polaroid** | `P` Key | Pause Menu Polaroid Button |
+| **Sanctuary Menu** | `Esc` Key | Top Bar `Menu [ESC]` Pill |
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## 🛠️ Technology Architecture
 
-- **Engine:** [Three.js](https://threejs.org/) + [React Three Fiber](https://r3f.docs.pmnd.rs/) (`@react-three/fiber`) + [Drei](https://github.com/pmndrs/drei) (`@react-three/drei`)
-- **UI Framework:** [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) + [TailwindCSS](https://tailwindcss.com/)
-- **Multiplayer P2P Networking:** [PeerJS](https://peerjs.com/) (WebRTC DataChannels) + BroadcastChannel API
-- **State Management:** [Zustand](https://github.com/pmndrs/zustand) with localStorage persistence
-- **Audio Synthesizer:** Web Audio API (procedural brownian noise, biquad resonant filtering, harmonic overtone oscillators)
-- **Tooling & Bundler:** [Vite 6](https://vitejs.dev/)
+- **Rendering Engine:** React 19 + React Three Fiber (`@react-three/fiber`) + Three.js (`three`)
+- **P2P Multiplayer:** PeerJS WebRTC DataChannels + BroadcastChannel Mesh + Audio MediaStream WebRTC
+- **Audio Synthesis:** Web Audio API procedural synthesizers (piano harmonics, rain noise, steam hiss, wind pink noise) + AudioContext AnalyserNode for mic voice activity
+- **Styling & HUD:** Tailwind CSS + Lucide React icons
+- **State Management:** Zustand with custom localStorage / IndexedDB persistence
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (version 18 or higher)
-- npm or pnpm or yarn
+- Node.js 18+
+- npm or pnpm
 
 ### Installation
-
 ```bash
-# Clone the repository
 git clone https://github.com/PurohitBhagyesh/lonercafe3d.git
-
-# Enter project directory
 cd lonercafe3d
-
-# Install dependencies
 npm install
-
-# Start development server
-npm run dev
 ```
 
-Visit **`http://localhost:3000`** in your browser.
-
-### Production Build
-
+### Running Locally
 ```bash
-# Type check and build optimized bundle
-npm run build
+npm run dev
+```
+Open `http://localhost:3000` in your web browser.
 
-# Preview production build locally
+### Building for Production
+```bash
+npm run build
 npm run preview
 ```
 
 ---
 
-## 🤝 Multiplayer Testing (Side-by-Side)
-
-1. Open `http://localhost:3000` in **Window A**.
-2. Note your 6-digit room PIN in the top bar (e.g. `849201`).
-3. Open `http://localhost:3000/?room=849201` in **Window B** (or in a Private window / another device on your network).
-4. You will immediately see both 3D avatars standing and walking together in real time!
-
----
-
 ## 📜 License
-
-Created with warmth for introverts and solitary souls everywhere. Licensed under the [MIT License](LICENSE).
+MIT License • Created with ❤️ for solitary dreamers everywhere.

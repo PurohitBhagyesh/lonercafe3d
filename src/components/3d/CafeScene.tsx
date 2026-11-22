@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useGameStore } from '../../store/gameStore'
@@ -43,12 +43,46 @@ export function CafeScene() {
   const woodFloorTexture = useMemo(() => createWoodFloorTexture(), [])
   const brickWallTexture = useMemo(() => createBrickWallTexture(), [])
 
+  // Camera direction-based view culling (render only when the user looks this way)
+  const [viewZones, setViewZones] = useState({
+    seeNorth: true, // Window & Outside weather
+    seeSouth: true, // Fireplace, Upright Piano, Writing Desk, Clock
+    seeEast: true,  // Barista espresso bar, grinder, pastry showcase
+    seeWest: true   // Library bookshelves, vinyl turntable, armchair
+  })
+
+  const camDir = useRef(new THREE.Vector3())
+
   // Floating held item in first person view with gentle sway
   useFrame((state) => {
     if (heldGroupRef.current && heldItem && mode === 'walking') {
       const t = state.clock.elapsedTime
       heldGroupRef.current.position.set(0.32, -0.25 + Math.sin(t * 3) * 0.012, -0.55)
       heldGroupRef.current.rotation.set(0.1, -0.2 + Math.cos(t * 2) * 0.015, 0)
+    }
+
+    // Selective View Rendering (Hide what is behind the user)
+    camera.getWorldDirection(camDir.current)
+    const dz = camDir.current.z
+    const dx = camDir.current.x
+
+    const nextNorth = dz < 0.45
+    const nextSouth = dz > -0.45
+    const nextEast = dx > -0.45
+    const nextWest = dx < 0.45
+
+    if (
+      viewZones.seeNorth !== nextNorth ||
+      viewZones.seeSouth !== nextSouth ||
+      viewZones.seeEast !== nextEast ||
+      viewZones.seeWest !== nextWest
+    ) {
+      setViewZones({
+        seeNorth: nextNorth,
+        seeSouth: nextSouth,
+        seeEast: nextEast,
+        seeWest: nextWest
+      })
     }
   })
 
@@ -179,45 +213,47 @@ export function CafeScene() {
         </mesh>
       </group>
 
-      {/* Real-Life Physical Hanging Brass Pendant Lamps */}
-      <HangingPendantLamp position={[3.6, 2.5, -1.2]} lightIntensity={2.8} />
-      <HangingPendantLamp position={[3.6, 2.5, 0.8]} lightIntensity={2.6} />
-      <HangingPendantLamp position={[0, 2.5, -2.5]} lightIntensity={2.4} />
-      <HangingPendantLamp position={[2.2, 2.5, 3.8]} lightIntensity={2.6} />
-      <HangingPendantLamp position={[-3.6, 2.5, -0.8]} lightIntensity={2.6} />
+      {/* 1. NORTH ZONE: Front Window, Window Counter & Outside Weather (Rendered when facing North) */}
+      <group visible={viewZones.seeNorth}>
+        <HangingPendantLamp position={[0, 2.5, -2.5]} lightIntensity={2.4} />
+        <ScentedCandle position={[0.4, 0.95, -4.7]} />
+        <WeatherEffect weather={weather} />
+      </group>
 
-      {/* Real-Life Café Decor Elements */}
-      <RealTimeWallClock position={[-1.2, 2.5, 4.95]} />
-      <ChalkboardMenu position={[5.46, 2.3, -0.5]} />
-      <PastryShowcase position={[3.6, 1.15, 1.1]} />
-      <VinylTurntable position={[-4.8, 1.95, -2.1]} />
-      <VinylCrate position={[-4.8, 1.95, -1.4]} />
-      <CastIronFireplace position={[-3.6, 0, 4.3]} />
+      {/* 2. SOUTH ZONE: Fireplace, Upright Piano, Cat, Clock, Writing Desk (Rendered when facing South) */}
+      <group visible={viewZones.seeSouth}>
+        <RealTimeWallClock position={[-1.2, 2.5, 4.95]} />
+        <CastIronFireplace position={[-3.6, 0, 4.3]} />
+        <SleepingCafeCat position={[-2.7, 0, 4.3]} />
+        <BankersDeskLamp position={[-1.6, 0.77, 2.25]} />
+        <UprightPiano position={[2.2, 0, 4.3]} rotation={[0, Math.PI, 0]} />
+        <AntiquarianBookStack position={[-2.9, 0.45, 2.6]} />
+        <ScentedCandle position={[-1.2, 0.79, 2.7]} />
+        <BlanketBasket position={[-4.3, 0, 2.8]} />
+        <HangingPendantLamp position={[2.2, 2.5, 3.8]} lightIntensity={2.6} />
+      </group>
 
-      {/* Sleeping Calico Café Cat curled peacefully on a knitted wool cushion by the hearth */}
-      <SleepingCafeCat position={[-2.7, 0, 4.3]} />
+      {/* 3. EAST ZONE: Barista Coffee Bar, Espresso Machine, Pastry Case, Grinder (Rendered when facing East) */}
+      <group visible={viewZones.seeEast}>
+        <ChalkboardMenu position={[5.46, 2.3, -0.5]} />
+        <PastryShowcase position={[3.6, 1.15, 1.1]} />
+        <CoffeeBeanJars position={[3.6, 1.15, -1.8]} />
+        <VintageCoffeeGrinder position={[3.6, 1.15, -2.3]} />
+        <HangingPendantLamp position={[3.6, 2.5, -1.2]} lightIntensity={2.8} />
+        <HangingPendantLamp position={[3.6, 2.5, 0.8]} lightIntensity={2.6} />
+      </group>
 
-      {/* Vintage Emerald Banker's Lamp on Writing Desk */}
-      <BankersDeskLamp position={[-1.6, 0.77, 2.25]} />
+      {/* 4. WEST ZONE: Library Bookshelves, Turntable, Gramophone, Coat Rack (Rendered when facing West) */}
+      <group visible={viewZones.seeWest}>
+        <VinylTurntable position={[-4.8, 1.95, -2.1]} />
+        <VinylCrate position={[-4.8, 1.95, -1.4]} />
+        <VictorianGramophone position={[-4.7, 1.15, -2.6]} />
+        <BentwoodCoatRack position={[-4.8, 0, -4.2]} />
+        <HangingPendantLamp position={[-3.6, 2.5, -0.8]} lightIntensity={2.6} />
+      </group>
 
-      {/* Interactive Upright Walnut Piano with Bench */}
-      <UprightPiano position={[2.2, 0, 4.3]} rotation={[0, Math.PI, 0]} />
-
-      {/* Lively Atmospheric Details */}
-      <CoffeeBeanJars position={[3.6, 1.15, -1.8]} />
-      <VintageCoffeeGrinder position={[3.6, 1.15, -2.3]} />
-      <VictorianGramophone position={[-4.7, 1.15, -2.6]} />
-      <AntiquarianBookStack position={[-2.9, 0.45, 2.6]} />
-      <ScentedCandle position={[-1.2, 0.79, 2.7]} />
-      <ScentedCandle position={[0.4, 0.95, -4.7]} />
-      <BlanketBasket position={[-4.3, 0, 2.8]} />
-      <BentwoodCoatRack position={[-4.8, 0, -4.2]} />
-
-      {/* Outside 3D Forest, Mountains, Stars & Weather */}
-      <WeatherEffect weather={weather} />
-
-      {/* Interior Furniture */}
-      <Furniture />
+      {/* Interior Furniture with strict Directional Zone Culling */}
+      <Furniture viewZones={viewZones} />
 
       {/* Plants & Watering Can */}
       <PlantsAndWatering />
