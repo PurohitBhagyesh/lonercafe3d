@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useGameStore } from '../../store/gameStore'
@@ -8,11 +8,25 @@ import { InteractableItems, SteamingMug } from './InteractableItem'
 import { PlantsAndWatering, WateringCanMesh } from './PlantsAndWatering'
 import { FriendAvatar } from './FriendAvatar'
 import { PlayerController } from './PlayerController'
+import { 
+  RealTimeWallClock, 
+  ChalkboardMenu, 
+  PastryShowcase, 
+  VinylTurntable 
+} from './RealLifeDecor'
+import { 
+  createWoodFloorTexture, 
+  createBrickWallTexture 
+} from '../../utils/proceduralTextures'
 
 export function CafeScene() {
   const { weather, timeOfDay, heldItem, mode } = useGameStore()
   const { camera } = useThree()
   const heldGroupRef = useRef<THREE.Group>(null)
+
+  // Procedural PBR Textures
+  const woodFloorTexture = useMemo(() => createWoodFloorTexture(), [])
+  const brickWallTexture = useMemo(() => createBrickWallTexture(), [])
 
   // Floating held item in first person view with breathing sway
   useFrame((state) => {
@@ -62,9 +76,6 @@ export function CafeScene() {
     }
   }[timeOfDay]
 
-  // Weather tint modifier
-  const weatherTint = weather === 'rain' ? '#3d4d5e' : weather === 'snow' ? '#687b8f' : weather === 'sakura' ? '#8a626d' : '#000000'
-
   return (
     <>
       {/* Dynamic Time of Day & Weather Lighting */}
@@ -79,18 +90,17 @@ export function CafeScene() {
 
       {/* Main Room Architecture */}
       <group>
-        {/* Wooden Plank Floor */}
+        {/* Realistic Hardwood Plank Floor with Seams & Nails */}
         <mesh position={[0, 0, 0]} rotation={[-Math.PI * 0.5, 0, 0]} receiveShadow>
           <planeGeometry args={[11, 10]} />
-          <meshStandardMaterial color="#2d1c13" roughness={0.65} metalness={0.1} />
+          <meshStandardMaterial map={woodFloorTexture} roughness={0.6} metalness={0.08} />
         </mesh>
 
-        {/* Ceiling with Wooden Beams */}
+        {/* Ceiling with Exposed Timber Beams */}
         <mesh position={[0, 3.6, 0]} rotation={[Math.PI * 0.5, 0, 0]}>
           <planeGeometry args={[11, 10]} />
           <meshStandardMaterial color="#1b120c" roughness={0.9} />
         </mesh>
-        {/* Exposed Ceiling Beams */}
         {[-3.5, -1.8, 0, 1.8, 3.5].map((z, i) => (
           <mesh key={i} position={[0, 3.45, z]}>
             <boxGeometry args={[11, 0.25, 0.3]} />
@@ -98,10 +108,10 @@ export function CafeScene() {
           </mesh>
         ))}
 
-        {/* Left Brick Wall */}
+        {/* Left Weathered Brick Wall with Mortar Joints */}
         <mesh position={[-5.5, 1.8, 0]} rotation={[0, Math.PI * 0.5, 0]} receiveShadow>
           <planeGeometry args={[10, 3.6]} />
-          <meshStandardMaterial color="#3d271d" roughness={0.8} />
+          <meshStandardMaterial map={brickWallTexture} roughness={0.85} />
         </mesh>
 
         {/* Right Wall */}
@@ -110,10 +120,10 @@ export function CafeScene() {
           <meshStandardMaterial color="#362218" roughness={0.8} />
         </mesh>
 
-        {/* Back Wall */}
+        {/* Back Brick Wall */}
         <mesh position={[0, 1.8, 5]} rotation={[0, Math.PI, 0]} receiveShadow>
           <planeGeometry args={[11, 3.6]} />
-          <meshStandardMaterial color="#2c1a11" roughness={0.85} />
+          <meshStandardMaterial map={brickWallTexture} roughness={0.85} />
         </mesh>
 
         {/* Front Wall Frame with HUGE Panoramic Window */}
@@ -148,14 +158,27 @@ export function CafeScene() {
           <meshPhysicalMaterial
             transparent
             opacity={0.3}
-            roughness={0.1}
-            transmission={0.9}
+            roughness={0.08}
+            transmission={0.92}
             thickness={0.2}
             color="#d4e8f7"
-            ior={1.45}
+            ior={1.48}
           />
         </mesh>
       </group>
+
+      {/* Real-Life Café Decor Elements */}
+      {/* 1. Real-Time Synchronized Analog Wall Clock on Back Wall */}
+      <RealTimeWallClock position={[-1.2, 2.5, 4.95]} />
+
+      {/* 2. Handwritten Daily Chalkboard Café Menu on Counter Wall */}
+      <ChalkboardMenu position={[5.45, 2.3, -0.5]} />
+
+      {/* 3. Fresh Pastry Showcase on the Barista Counter */}
+      <PastryShowcase position={[3.6, 1.15, 1.1]} />
+
+      {/* 4. Vintage Vinyl Turntable on the Library Shelf */}
+      <VinylTurntable position={[-4.8, 1.95, -2.1]} />
 
       {/* Outside 3D Weather, Trees, Stars & Horizon */}
       <WeatherEffect weather={weather} />
